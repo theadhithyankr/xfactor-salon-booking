@@ -1,7 +1,32 @@
-import { AppBar, Toolbar, Typography, Button, Box, Container } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { AppBar, Toolbar, Typography, Button, Box, Container, Avatar } from '@mui/material';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
+    const navigate = useNavigate();
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        // Check current session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/');
+    };
+
     return (
         <AppBar position="fixed" color="inherit" elevation={0} sx={{ top: 0 }}>
             <Container maxWidth="xl">
@@ -26,6 +51,7 @@ export default function Navbar() {
                             cursor: 'pointer',
                             letterSpacing: '-1px',
                         }}
+                        onClick={() => navigate('/')}
                     >
                         XFactor
                     </Typography>
@@ -34,15 +60,12 @@ export default function Navbar() {
 
                     {/* Nav Items */}
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        {['Services', 'Salons', 'About', 'Dashboard'].map((item, index) => (
+                        {['Services', 'Salons', 'About'].map((item, index) => (
                             <Button
                                 key={item}
                                 component={motion.button}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => {
-                                    if (item === 'Dashboard') window.location.href = '/dashboard';
-                                }}
                                 sx={{
                                     color: 'text.secondary',
                                     fontWeight: 500,
@@ -59,28 +82,67 @@ export default function Navbar() {
                                 {item}
                             </Button>
                         ))}
+                        {user && (
+                            <Button
+                                component={motion.button}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => navigate('/dashboard')}
+                                sx={{
+                                    color: 'text.secondary',
+                                    fontWeight: 500,
+                                    fontSize: '0.95rem',
+                                    '&:hover': {
+                                        color: 'primary.main',
+                                        backgroundColor: 'transparent',
+                                    },
+                                }}
+                            >
+                                Dashboard
+                            </Button>
+                        )}
                     </Box>
 
-                    <Box sx={{ ml: 4, display: 'flex', gap: 2 }}>
-                        <Button
-                            variant="text"
-                            color="primary"
-                            component={motion.button}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => window.location.href = '/login'}
-                        >
-                            Login
-                        </Button>
-                        <Button
-                            variant="contained"
-                            component={motion.button}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => window.location.href = '/book'}
-                        >
-                            Book Now
-                        </Button>
+                    <Box sx={{ ml: 4, display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {user ? (
+                            <>
+                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                                    {user.email?.charAt(0).toUpperCase()}
+                                </Avatar>
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={handleLogout}
+                                    component={motion.button}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Logout
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="text"
+                                    color="primary"
+                                    component={motion.button}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => window.location.href = '/login'}
+                                >
+                                    Login
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    component={motion.button}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => window.location.href = '/book'}
+                                >
+                                    Book Now
+                                </Button>
+                            </>
+                        )}
                     </Box>
                 </Toolbar>
             </Container>

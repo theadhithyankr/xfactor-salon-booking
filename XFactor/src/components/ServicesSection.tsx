@@ -145,7 +145,7 @@ export default function ServicesSection() {
                                     flexDirection: 'column',
                                     textAlign: 'center',
                                     overflow: 'hidden',
-                                    borderRadius: 4,
+                                    borderRadius: '16px',
                                     '&:hover': {
                                         transform: 'translateY(-8px)',
                                         boxShadow: '0 12px 30px rgba(255, 0, 0, 0.15)',

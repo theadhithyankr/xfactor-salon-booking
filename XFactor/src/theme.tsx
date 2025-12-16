@@ -58,13 +58,13 @@ const theme = createTheme({
         },
     },
     shape: {
-        borderRadius: 0, // Sharper edges for a bolder Red/Black look? Or keep rounded? Let's keep 4px for slight softness or 0 for sleek. Let's go with 4.
+        borderRadius: 16, // Rounded corners for all components
     },
     components: {
         MuiButton: {
             styleOverrides: {
                 root: {
-                    borderRadius: '4px', // Geometric feel
+                    borderRadius: '12px', // Rounded corners
                     padding: '10px 24px',
                     boxShadow: 'none',
                     transition: 'all 0.3s ease',
@@ -93,6 +93,7 @@ const theme = createTheme({
             styleOverrides: {
                 root: {
                     backgroundImage: 'none',
+                    borderRadius: '16px',
                 },
                 elevation1: {
                     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.8)',
@@ -113,6 +114,7 @@ const theme = createTheme({
                 root: {
                     background: '#121212',
                     border: '1px solid #333',
+                    borderRadius: '16px',
                     transition: 'all 0.3s ease-in-out',
                     '&:hover': {
                         borderColor: '#FF0000',
