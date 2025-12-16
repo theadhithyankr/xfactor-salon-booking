@@ -115,131 +115,160 @@ export default function BookingPage() {
     };
 
     return (
-        <Container maxWidth="md" sx={{ py: 12 }}>
-            <Typography variant="h2" align="center" gutterBottom fontWeight="800">
-                Book Appointment
-            </Typography>
+        <Box sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 1,
+            pt: '80px',
+            overflow: 'auto',
+            px: 2
+        }}>
+            <Container maxWidth="md" sx={{ py: 6 }}>
+                <Typography variant="h2" align="center" gutterBottom fontWeight="800">
+                    Book Appointment
+                </Typography>
 
-            <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 8 }}>
-                {steps.map((label) => (
-                    <Step key={label}>
-                        <StepLabel>{label}</StepLabel>
-                    </Step>
-                ))}
-            </Stepper>
+                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 8 }}>
+                    {steps.map((label) => (
+                        <Step key={label}>
+                            <StepLabel>{label}</StepLabel>
+                        </Step>
+                    ))}
+                </Stepper>
 
-            <MotionPaper
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                sx={{ p: 4, borderRadius: 4, bgcolor: 'background.paper', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-                {activeStep === 0 && (
-                    <Box>
-                        <Typography variant="h5" gutterBottom>Select a Service</Typography>
-                        <Typography color="text.secondary">
-                            Please go back to the home page to select a service. (This checks strictly for flow)
-                        </Typography>
-                        <Button onClick={() => navigate('/')} sx={{ mt: 2 }} variant="outlined">
-                            Back to Home
+                <MotionPaper
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    sx={{ p: 4, borderRadius: 4, bgcolor: 'background.paper', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                    {activeStep === 0 && (
+                        <Box>
+                            <Typography variant="h5" gutterBottom>Select a Service</Typography>
+                            <Typography color="text.secondary">
+                                Please go back to the home page to select a service. (This checks strictly for flow)
+                            </Typography>
+                            <Button onClick={() => navigate('/')} sx={{ mt: 2 }} variant="outlined">
+                                Back to Home
+                            </Button>
+                        </Box>
+                    )}
+
+                    {activeStep === 1 && (
+                        <Box>
+                            <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
+                                Schedule for <span style={{ color: '#FF0000' }}>{serviceName}</span>
+                            </Typography>
+
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <Grid container spacing={4}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
+                                        <Typography variant="subtitle1" gutterBottom>Select Date</Typography>
+                                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                            <DateCalendar
+                                                value={selectedDate}
+                                                onChange={(newValue) => setSelectedDate(newValue)}
+                                                sx={{
+                                                    bgcolor: 'background.paper',
+                                                    borderRadius: 2,
+                                                    border: '1px solid #333',
+                                                    width: '100%',
+                                                    maxWidth: '100%'
+                                                }}
+                                            />
+                                        </Box>
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 6 }}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                            <Box>
+                                                <Typography variant="subtitle1" gutterBottom>Select Time</Typography>
+                                                <TimePicker
+                                                    label="Time"
+                                                    value={selectedTime}
+                                                    onChange={(newValue) => setSelectedTime(newValue)}
+                                                    ampm={true}
+                                                    slotProps={{
+                                                        textField: {
+                                                            fullWidth: true,
+                                                            sx: {
+                                                                '& .MuiInputBase-root': {
+                                                                    bgcolor: 'background.paper'
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </Box>
+
+                                            <Box sx={{ mt: 2 }}>
+                                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                                    Notes
+                                                </Typography>
+                                                <TextField
+                                                    fullWidth
+                                                    multiline
+                                                    rows={4}
+                                                    placeholder="Any specific instructions? (e.g., sensitive skin, specific style)"
+                                                />
+                                            </Box>
+                                        </Box>
+                                    </Grid>
+                                </Grid>
+                            </LocalizationProvider>
+                        </Box>
+                    )}
+
+                    {activeStep === 2 && (
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                Confirm Booking
+                            </Typography>
+                            <Box sx={{ my: 4, p: 3, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2, display: 'inline-block', textAlign: 'left', minWidth: '300px' }}>
+                                <Stack spacing={2}>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Service</Typography>
+                                        <Typography variant="h6">{serviceName}</Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Date</Typography>
+                                        <Typography variant="h6">{selectedDate?.format('dddd, MMMM D, YYYY')}</Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Time</Typography>
+                                        <Typography variant="h6">{selectedTime?.format('h:mm A')}</Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Total Estimate</Typography>
+                                        <Typography variant="h6" color="primary.main">₹{servicePrice.toFixed(2)}</Typography>
+                                    </Box>
+                                </Stack>
+                            </Box>
+                        </Box>
+                    )}
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <Button
+                            disabled={activeStep === 0}
+                            onClick={handleBack}
+                            sx={{ mr: 1 }}
+                        >
+                            Back
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={handleNext}
+                            size="large"
+                            sx={{ px: 6 }}
+                        >
+                            {activeStep === steps.length - 1 ? 'Confirm Booking' : 'Next'}
                         </Button>
                     </Box>
-                )}
-
-                {activeStep === 1 && (
-                    <Box>
-                        <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4 }}>
-                            Schedule for <span style={{ color: '#FF0000' }}>{serviceName}</span>
-                        </Typography>
-
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <Grid container spacing={4}>
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <Typography variant="subtitle1" gutterBottom>Select Date</Typography>
-                                    <Paper sx={{ p: 0, bgcolor: 'transparent' }}>
-                                        <DateCalendar
-                                            value={selectedDate}
-                                            onChange={(newValue) => setSelectedDate(newValue)}
-                                            sx={{
-                                                bgcolor: 'background.paper',
-                                                borderRadius: 2,
-                                                border: '1px solid #333'
-                                            }}
-                                        />
-                                    </Paper>
-                                </Grid>
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <Typography variant="subtitle1" gutterBottom>Select Time</Typography>
-                                    <TimePicker
-                                        label="Time"
-                                        value={selectedTime}
-                                        onChange={(newValue) => setSelectedTime(newValue)}
-                                        ampm={true}
-                                        sx={{ width: '100%' }}
-                                    />
-
-                                    <Box sx={{ mt: 4 }}>
-                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                            Notes
-                                        </Typography>
-                                        <TextField
-                                            fullWidth
-                                            multiline
-                                            rows={4}
-                                            placeholder="Any specific instructions? (e.g., sensitive skin, specific style)"
-                                        />
-                                    </Box>
-                                </Grid>
-                            </Grid>
-                        </LocalizationProvider>
-                    </Box>
-                )}
-
-                {activeStep === 2 && (
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                            Confirm Booking
-                        </Typography>
-                        <Box sx={{ my: 4, p: 3, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2, display: 'inline-block', textAlign: 'left', minWidth: '300px' }}>
-                            <Stack spacing={2}>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">Service</Typography>
-                                    <Typography variant="h6">{serviceName}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">Date</Typography>
-                                    <Typography variant="h6">{selectedDate?.format('dddd, MMMM D, YYYY')}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">Time</Typography>
-                                    <Typography variant="h6">{selectedTime?.format('h:mm A')}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">Total Estimate</Typography>
-                                    <Typography variant="h6" color="primary.main">₹{servicePrice.toFixed(2)}</Typography>
-                                </Box>
-                            </Stack>
-                        </Box>
-                    </Box>
-                )}
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Button
-                        disabled={activeStep === 0}
-                        onClick={handleBack}
-                        sx={{ mr: 1 }}
-                    >
-                        Back
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleNext}
-                        size="large"
-                        sx={{ px: 6 }}
-                    >
-                        {activeStep === steps.length - 1 ? 'Confirm Booking' : 'Next'}
-                    </Button>
-                </Box>
-            </MotionPaper>
-        </Container>
+                </MotionPaper>
+            </Container>
+        </Box>
     );
 }

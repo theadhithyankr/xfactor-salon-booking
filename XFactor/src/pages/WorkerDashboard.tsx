@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Container, Paper, CircularProgress, Grid, Card, CardContent, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, Container, Paper, CircularProgress, Grid, Card, CardContent, Button } from '@mui/material';
 import { Work, Schedule, Star } from '@mui/icons-material';
 
 export default function WorkerDashboard() {
@@ -54,16 +54,19 @@ export default function WorkerDashboard() {
         fetchData();
     }, [navigate]);
 
-    const toggleAvailability = async () => {
-        if (!workerData) return;
-
+    const updateStatus = async (id: string, status: string) => {
         const { error } = await supabase
-            .from('workers')
-            .update({ is_available: !workerData.is_available })
-            .eq('id', workerData.id);
+            .from('appointments')
+            .update({ status })
+            .eq('id', id);
 
-        if (!error) {
-            setWorkerData({ ...workerData, is_available: !workerData.is_available });
+        if (error) {
+            alert('Error updating status: ' + error.message);
+        } else {
+            // Update local state
+            setAppointments(appointments.map(apt =>
+                apt.id === id ? { ...apt, status } : apt
+            ));
         }
     };
 
@@ -96,13 +99,6 @@ export default function WorkerDashboard() {
                     <Typography variant="h5" color="primary.main">
                         {profile?.full_name || 'Worker'}
                     </Typography>
-                    {workerData && (
-                        <FormControlLabel
-                            control={<Switch checked={workerData.is_available} onChange={toggleAvailability} />}
-                            label="Available for bookings"
-                            sx={{ mt: 2 }}
-                        />
-                    )}
                 </Paper>
 
                 <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -157,13 +153,33 @@ export default function WorkerDashboard() {
                                 <Card key={apt.id} sx={{ mb: 2, p: 2 }}>
                                     <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
                                     <Typography color="text.secondary">Time: {apt.start_time} - {apt.end_time}</Typography>
-                                    <Typography color="text.secondary">Status: {apt.status}</Typography>
+                                    <Typography color="text.secondary" sx={{ mb: 1 }}>Status: {apt.status}</Typography>
+                                    {['pending', 'confirmed', 'in_progress'].includes(apt.status) && (
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                size="small"
+                                                onClick={() => updateStatus(apt.id, 'completed')}
+                                            >
+                                                Complete
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                color="error"
+                                                size="small"
+                                                onClick={() => updateStatus(apt.id, 'cancelled')}
+                                            >
+                                                No Show
+                                            </Button>
+                                        </Box>
+                                    )}
                                 </Card>
                             ))}
                         </Box>
                     )}
                 </Paper>
-            </Container>
-        </Box>
+            </Container >
+        </Box >
     );
 }

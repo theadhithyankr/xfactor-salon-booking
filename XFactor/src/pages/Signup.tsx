@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, Box, Link, Alert, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Container, Paper, Typography, TextField, Button, Box, Link, Alert } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -8,7 +8,6 @@ const MotionPaper = motion(Paper);
 
 export default function Signup() {
     const navigate = useNavigate();
-    const [role, setRole] = useState<'customer' | 'worker' | 'admin'>('customer');
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -30,7 +29,7 @@ export default function Signup() {
                     data: {
                         full_name: fullName,
                         phone: phone,
-                        role: role, // Storing role in metadata for trigger to pick up or manual handling
+                        role: 'customer', // Default to customer for all public signups
                     },
                 },
             });
@@ -82,26 +81,6 @@ export default function Signup() {
                 >
                     <Typography variant="h4" align="center" gutterBottom fontWeight="bold">
                         Create Account
-                    </Typography>
-
-                    {/* Role Selection UI - For Demo Purposes */}
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-                        <ToggleButtonGroup
-                            value={role}
-                            exclusive
-                            onChange={(_, newRole) => newRole && setRole(newRole)}
-                            aria-label="User Role"
-                            color="primary"
-                            sx={{ bgcolor: 'rgba(255,255,255,0.05)' }}
-                        >
-                            <ToggleButton value="customer" sx={{ px: 3 }}>Customer</ToggleButton>
-                            <ToggleButton value="worker" sx={{ px: 3 }}>Worker</ToggleButton>
-                            <ToggleButton value="admin" sx={{ px: 3 }}>Admin</ToggleButton>
-                        </ToggleButtonGroup>
-                    </Box>
-
-                    <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 4 }}>
-                        Sign up as a <span style={{ color: '#FF0000', fontWeight: 'bold', textTransform: 'capitalize' }}>{role}</span>
                     </Typography>
 
                     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
