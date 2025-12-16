@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
 import ServicesSection from '../components/ServicesSection';
-import { Box, CircularProgress } from '@mui/material';
+import { Box } from '@mui/material';
 import { supabase } from '../lib/supabase';
+import ScissorsLoader from '../components/ScissorsLoader';
 
 export default function Home() {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function Home() {
 
     useEffect(() => {
         const checkRoleAndRedirect = async () => {
+            const startTime = Date.now();
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
@@ -26,7 +28,17 @@ export default function Home() {
                 .single();
 
             if (profile && (profile.role === 'worker' || profile.role === 'admin')) {
-                navigate('/dashboard');
+                // Ensure minimum display time for animation (1.5s)
+                const elapsed = Date.now() - startTime;
+                const minDisplayTime = 1500;
+
+                if (elapsed < minDisplayTime) {
+                    setTimeout(() => {
+                        navigate('/dashboard');
+                    }, minDisplayTime - elapsed);
+                } else {
+                    navigate('/dashboard');
+                }
             } else {
                 // Customer or no profile, show home page
                 setLoading(false);
@@ -37,11 +49,7 @@ export default function Home() {
     }, [navigate]);
 
     if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress color="primary" />
-            </Box>
-        );
+        return <ScissorsLoader />;
     }
 
     return (
