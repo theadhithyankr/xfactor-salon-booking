@@ -65,6 +65,7 @@ export default function Navbar() {
                             component={motion.button}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
+                            onClick={() => window.location.href = '/login'}
                         >
                             Login
                         </Button>
