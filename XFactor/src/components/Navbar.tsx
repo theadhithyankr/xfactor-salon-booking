@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Container, Avatar } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { AppBar, Toolbar, Typography, Button, Box, Container, Avatar, IconButton } from '@mui/material';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -7,20 +7,39 @@ import { useNavigate } from 'react-router-dom';
 export default function Navbar() {
     const navigate = useNavigate();
     const [user, setUser] = useState<any>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
         // Check current session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
+            if (session?.user) {
+                fetchUserRole(session.user.id);
+            }
         });
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
+            if (session?.user) {
+                fetchUserRole(session.user.id);
+            } else {
+                setUserRole(null);
+            }
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const fetchUserRole = async (userId: string) => {
+        const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        setUserRole(data?.role || null);
+    };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -59,39 +78,78 @@ export default function Navbar() {
                     <Box sx={{ flexGrow: 1 }} />
 
                     {/* Nav Items */}
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        {['Services', 'Salons', 'About'].map((item, index) => (
+                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                        <Button
+                            onClick={() => navigate('/')}
+                            sx={{
+                                color: 'text.primary',
+                                fontWeight: 500,
+                                fontSize: '1rem',
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    backgroundColor: 'transparent',
+                                },
+                            }}
+                        >
+                            Home
+                        </Button>
+
+                        <Button
+                            onClick={() => navigate('/salons')}
+                            sx={{
+                                color: 'text.primary',
+                                fontWeight: 500,
+                                fontSize: '1rem',
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    backgroundColor: 'transparent',
+                                },
+                            }}
+                        >
+                            Salons
+                        </Button>
+
+                        <Button
+                            onClick={() => navigate('/about')}
+                            sx={{
+                                color: 'text.primary',
+                                fontWeight: 500,
+                                fontSize: '1rem',
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    backgroundColor: 'transparent',
+                                },
+                            }}
+                        >
+                            About
+                        </Button>
+
+                        {/* Show "My Bookings" for customers only */}
+                        {user && userRole === 'customer' && (
                             <Button
-                                key={item}
-                                component={motion.button}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                onClick={() => navigate('/my-bookings')}
                                 sx={{
-                                    color: 'text.secondary',
+                                    color: 'text.primary',
                                     fontWeight: 500,
-                                    fontSize: '0.95rem',
+                                    fontSize: '1rem',
                                     '&:hover': {
                                         color: 'primary.main',
                                         backgroundColor: 'transparent',
                                     },
                                 }}
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
                             >
-                                {item}
+                                My Bookings
                             </Button>
-                        ))}
-                        {user && (
+                        )}
+
+                        {/* Show "Dashboard" for workers and admins only */}
+                        {user && (userRole === 'worker' || userRole === 'admin') && (
                             <Button
-                                component={motion.button}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                                 onClick={() => navigate('/dashboard')}
                                 sx={{
-                                    color: 'text.secondary',
+                                    color: 'text.primary',
                                     fontWeight: 500,
-                                    fontSize: '0.95rem',
+                                    fontSize: '1rem',
                                     '&:hover': {
                                         color: 'primary.main',
                                         backgroundColor: 'transparent',
@@ -101,47 +159,49 @@ export default function Navbar() {
                                 Dashboard
                             </Button>
                         )}
-                    </Box>
 
-                    <Box sx={{ ml: 4, display: 'flex', gap: 2, alignItems: 'center' }}>
                         {user ? (
-                            <>
-                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                                    {user.email?.charAt(0).toUpperCase()}
-                                </Avatar>
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', ml: 2 }}>
+                                <IconButton onClick={() => navigate(userRole === 'customer' ? '/my-bookings' : '/dashboard')}>
+                                    <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+                                        {user.email?.charAt(0).toUpperCase()}
+                                    </Avatar>
+                                </IconButton>
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     onClick={handleLogout}
-                                    component={motion.button}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
+                                    size="small"
                                 >
                                     Logout
                                 </Button>
-                            </>
+                            </Box>
                         ) : (
-                            <>
+                            <Box sx={{ display: 'flex', gap: 2, ml: 2 }}>
                                 <Button
                                     variant="text"
                                     color="primary"
-                                    component={motion.button}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => window.location.href = '/login'}
+                                    onClick={() => navigate('/login')}
                                 >
                                     Login
                                 </Button>
                                 <Button
                                     variant="contained"
-                                    component={motion.button}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => window.location.href = '/book'}
+                                    onClick={() => navigate('/book')}
                                 >
                                     Book Now
                                 </Button>
-                            </>
+                            </Box>
+                        )}
+
+                        {/* Book Now for logged-in customers */}
+                        {user && userRole === 'customer' && (
+                            <Button
+                                variant="contained"
+                                onClick={() => navigate('/book')}
+                            >
+                                Book Now
+                            </Button>
                         )}
                     </Box>
                 </Toolbar>

@@ -50,83 +50,96 @@ export default function CustomerDashboard() {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 12, pt: 15 }}>
-            <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
-                <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Welcome, <span style={{ color: '#FF0000' }}>{profile?.full_name || 'Customer'}</span>
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    Manage your appointments and book new services
-                </Typography>
-            </Paper>
+        <Box sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 1,
+            pt: '80px',
+            overflow: 'auto',
+        }}>
+            <Container maxWidth="lg">
+                <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
+                    <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        Welcome, <span style={{ color: '#FF0000' }}>{profile?.full_name || 'Customer'}</span>
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Manage your appointments and book new services
+                    </Typography>
+                </Paper>
 
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ height: '100%' }}>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <CalendarMonth sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{appointments.length}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Total Bookings</Typography>
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Card sx={{ height: '100%' }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <CalendarMonth sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{appointments.length}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Total Bookings</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ height: '100%' }}>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Schedule sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">
-                                        {appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">Upcoming</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Card sx={{ height: '100%' }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Schedule sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">
+                                            {appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">Upcoming</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ height: '100%' }}>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Person sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">Customer</Typography>
-                                    <Typography variant="body2" color="text.secondary">Account Type</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Card sx={{ height: '100%' }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Person sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">Customer</Typography>
+                                        <Typography variant="body2" color="text.secondary">Account Type</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </Grid>
                 </Grid>
-            </Grid>
 
-            <Paper sx={{ p: 4 }}>
-                <Typography variant="h5" gutterBottom fontWeight="bold">My Appointments</Typography>
-                {appointments.length === 0 ? (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                        <Typography color="text.secondary" sx={{ mb: 3 }}>
-                            You have no appointments yet
-                        </Typography>
-                        <Button variant="contained" onClick={() => navigate('/')}>
-                            Book Your First Service
-                        </Button>
-                    </Box>
-                ) : (
-                    <Box>
-                        {appointments.map((apt) => (
-                            <Card key={apt.id} sx={{ mb: 2, p: 2 }}>
-                                <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
-                                <Typography color="text.secondary">Time: {apt.start_time}</Typography>
-                                <Typography color="text.secondary">Status: {apt.status}</Typography>
-                            </Card>
-                        ))}
-                    </Box>
-                )}
-            </Paper>
-        </Container>
+                <Paper sx={{ p: 4 }}>
+                    <Typography variant="h5" gutterBottom fontWeight="bold">My Appointments</Typography>
+                    {appointments.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 6 }}>
+                            <Typography color="text.secondary" sx={{ mb: 3 }}>
+                                You have no appointments yet
+                            </Typography>
+                            <Button variant="contained" onClick={() => navigate('/')}>
+                                Book Your First Service
+                            </Button>
+                        </Box>
+                    ) : (
+                        <Box>
+                            {appointments.map((apt) => (
+                                <Card key={apt.id} sx={{ mb: 2, p: 2 }}>
+                                    <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
+                                    <Typography color="text.secondary">Time: {apt.start_time}</Typography>
+                                    <Typography color="text.secondary">Status: {apt.status}</Typography>
+                                </Card>
+                            ))}
+                        </Box>
+                    )}
+                </Paper>
+            </Container>
+        </Box>
     );
 }

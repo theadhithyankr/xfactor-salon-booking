@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // Corrected import
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Container, Typography, Box, Paper, Grid, Button,
-    TextField, Stack, Step, Stepper, StepLabel
+    TextField, Stack, Step, Stepper, StepLabel, Alert
 } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -19,12 +19,61 @@ const MotionPaper = motion(Paper);
 export default function BookingPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const [activeStep, setActiveStep] = useState(1); // Start at step 1 since service is "selected" via navigation or default
+    const [activeStep, setActiveStep] = useState(1);
     const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
     const [selectedTime, setSelectedTime] = useState<Dayjs | null>(dayjs().set('hour', 10).set('minute', 0));
+    const [accessDenied, setAccessDenied] = useState(false);
 
-    // Mock data - in real app would come from DB
-    const serviceName = location.state?.serviceName || 'General Service';
+    // Get service from navigation state
+    const service = location.state?.service || null;
+    const serviceName = service?.name || 'General Service';
+    const servicePrice = service?.price || 0;
+    const serviceDuration = service?.duration_minutes || 60;
+
+    // Check if user is a customer
+    useEffect(() => {
+        const checkUserRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                // Not logged in - allow them to proceed, will be caught at booking time
+                return;
+            }
+
+            // Fetch user profile to check role
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (profile && profile.role !== 'customer') {
+                setAccessDenied(true);
+                setTimeout(() => {
+                    navigate('/dashboard');
+                }, 3000);
+            }
+        };
+
+        checkUserRole();
+    }, [navigate]);
+
+    if (accessDenied) {
+        return (
+            <Container maxWidth="md" sx={{ py: 12, pt: 15 }}>
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>Access Restricted</Typography>
+                    <Typography>
+                        Appointment booking is only available for customers.
+                        {' '}Workers and admins cannot book appointments.
+                    </Typography>
+                    <Typography sx={{ mt: 2 }}>
+                        Redirecting to your dashboard...
+                    </Typography>
+                </Alert>
+            </Container>
+        );
+    }
 
     const handleNext = async () => {
         if (activeStep === steps.length - 1) {
@@ -41,11 +90,12 @@ export default function BookingPage() {
                 .from('appointments')
                 .insert({
                     customer_id: user.id,
+                    service_id: service?.id || null,
                     appointment_date: selectedDate?.format('YYYY-MM-DD'),
                     start_time: selectedTime?.format('HH:mm'),
-                    end_time: selectedTime?.add(1, 'hour').format('HH:mm'), // Mock duration
+                    end_time: selectedTime?.add(serviceDuration, 'minute').format('HH:mm'),
                     status: 'pending',
-                    // notes: notes // We need to add state for notes first
+                    total_price: servicePrice,
                 });
 
             if (error) {
@@ -53,8 +103,8 @@ export default function BookingPage() {
                 return;
             }
 
-            alert('Booking Confirmed! You can view it in your profile.');
-            navigate('/');
+            alert('Booking Confirmed! You can view it in your dashboard.');
+            navigate('/dashboard');
         } else {
             setActiveStep((prev) => prev + 1);
         }
@@ -164,7 +214,7 @@ export default function BookingPage() {
                                 </Box>
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">Total Estimate</Typography>
-                                    <Typography variant="h6" color="primary.main">$50.00</Typography>
+                                    <Typography variant="h6" color="primary.main">${servicePrice.toFixed(2)}</Typography>
                                 </Box>
                             </Stack>
                         </Box>

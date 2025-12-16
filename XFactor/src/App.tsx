@@ -1,11 +1,14 @@
 import { Box } from '@mui/material';
-import { BrowserRouter, Routes, Route } from 'react-router-dom'; // Import router components
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import BookingPage from './pages/BookingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import About from './pages/About';
+import Salons from './pages/Salons';
+import MyBookings from './pages/MyBookings';
 
 function App() {
   return (
@@ -18,6 +21,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/salons" element={<Salons />} />
+          <Route path="/my-bookings" element={<MyBookings />} />
         </Routes>
       </Box>
     </BrowserRouter>

@@ -62,94 +62,107 @@ export default function AdminDashboard() {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 12, pt: 15 }}>
-            <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
-                <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Admin Dashboard
-                </Typography>
-                <Typography variant="h5" color="primary.main">
-                    {profile?.full_name || 'Administrator'}
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-                    Manage users, salons, and system settings
-                </Typography>
-            </Paper>
+        <Box sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 1, // Ensure it sits below navbar but visible
+            pt: '80px', // Push down content just enough so it's not hidden by navbar if screen is small
+            overflow: 'auto', // Allow scrolling if content is taller than screen
+        }}>
+            <Container maxWidth="lg">
+                <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
+                    <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        Admin Dashboard
+                    </Typography>
+                    <Typography variant="h5" color="primary.main">
+                        {profile?.full_name || 'Administrator'}
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                        Manage users, salons, and system settings
+                    </Typography>
+                </Paper>
 
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <People sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{stats.totalUsers}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Total Users</Typography>
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <People sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{stats.totalUsers}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Total Users</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Store sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{stats.totalSalons}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Salons</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Store sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{stats.totalSalons}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Salons</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <CalendarMonth sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{stats.totalAppointments}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Appointments</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <CalendarMonth sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{stats.totalAppointments}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Appointments</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Assessment sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{stats.totalWorkers}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Workers</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Assessment sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{stats.totalWorkers}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Workers</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </Grid>
                 </Grid>
-            </Grid>
 
-            <Paper sx={{ p: 4 }}>
-                <Typography variant="h5" gutterBottom fontWeight="bold">Admin Controls</Typography>
-                <Grid container spacing={2} sx={{ mt: 2 }}>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Button variant="contained" fullWidth size="large">
-                            Manage Users
-                        </Button>
+                <Paper sx={{ p: 4 }}>
+                    <Typography variant="h5" gutterBottom fontWeight="bold">Admin Controls</Typography>
+                    <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <Button variant="contained" fullWidth size="large">
+                                Manage Users
+                            </Button>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <Button variant="contained" fullWidth size="large">
+                                Manage Salons
+                            </Button>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <Button variant="contained" fullWidth size="large">
+                                View Reports
+                            </Button>
+                        </Grid>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Button variant="contained" fullWidth size="large">
-                            Manage Salons
-                        </Button>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Button variant="contained" fullWidth size="large">
-                            View Reports
-                        </Button>
-                    </Grid>
-                </Grid>
-            </Paper>
-        </Container>
+                </Paper>
+            </Container>
+        </Box>
     );
 }

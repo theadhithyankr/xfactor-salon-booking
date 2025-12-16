@@ -76,81 +76,94 @@ export default function WorkerDashboard() {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 12, pt: 15 }}>
-            <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
-                <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Worker Dashboard
-                </Typography>
-                <Typography variant="h5" color="primary.main">
-                    {profile?.full_name || 'Worker'}
-                </Typography>
-                {workerData && (
-                    <FormControlLabel
-                        control={<Switch checked={workerData.is_available} onChange={toggleAvailability} />}
-                        label="Available for bookings"
-                        sx={{ mt: 2 }}
-                    />
-                )}
-            </Paper>
+        <Box sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 1,
+            pt: '80px',
+            overflow: 'auto',
+        }}>
+            <Container maxWidth="lg">
+                <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
+                    <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        Worker Dashboard
+                    </Typography>
+                    <Typography variant="h5" color="primary.main">
+                        {profile?.full_name || 'Worker'}
+                    </Typography>
+                    {workerData && (
+                        <FormControlLabel
+                            control={<Switch checked={workerData.is_available} onChange={toggleAvailability} />}
+                            label="Available for bookings"
+                            sx={{ mt: 2 }}
+                        />
+                    )}
+                </Paper>
 
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Schedule sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{appointments.length}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Total Appointments</Typography>
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Schedule sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{appointments.length}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Total Appointments</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Star sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{workerData?.rating || '0.0'}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Rating</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Star sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{workerData?.rating || '0.0'}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Rating</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Work sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                                <Box>
-                                    <Typography variant="h4" fontWeight="bold">{workerData?.total_reviews || 0}</Typography>
-                                    <Typography variant="body2" color="text.secondary">Reviews</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Card>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                    <Work sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="h4" fontWeight="bold">{workerData?.total_reviews || 0}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Reviews</Typography>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </Grid>
                 </Grid>
-            </Grid>
 
-            <Paper sx={{ p: 4 }}>
-                <Typography variant="h5" gutterBottom fontWeight="bold">My Schedule</Typography>
-                {appointments.length === 0 ? (
-                    <Typography color="text.secondary">No appointments scheduled</Typography>
-                ) : (
-                    <Box>
-                        {appointments.map((apt) => (
-                            <Card key={apt.id} sx={{ mb: 2, p: 2 }}>
-                                <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
-                                <Typography color="text.secondary">Time: {apt.start_time} - {apt.end_time}</Typography>
-                                <Typography color="text.secondary">Status: {apt.status}</Typography>
-                            </Card>
-                        ))}
-                    </Box>
-                )}
-            </Paper>
-        </Container>
+                <Paper sx={{ p: 4 }}>
+                    <Typography variant="h5" gutterBottom fontWeight="bold">My Schedule</Typography>
+                    {appointments.length === 0 ? (
+                        <Typography color="text.secondary">No appointments scheduled</Typography>
+                    ) : (
+                        <Box>
+                            {appointments.map((apt) => (
+                                <Card key={apt.id} sx={{ mb: 2, p: 2 }}>
+                                    <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
+                                    <Typography color="text.secondary">Time: {apt.start_time} - {apt.end_time}</Typography>
+                                    <Typography color="text.secondary">Status: {apt.status}</Typography>
+                                </Card>
+                            ))}
+                        </Box>
+                    )}
+                </Paper>
+            </Container>
+        </Box>
     );
 }
