@@ -163,7 +163,31 @@ export default function WorkerDashboard() {
                                     <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
                                     <Typography color="text.secondary">Time: {apt.start_time} - {apt.end_time}</Typography>
                                     <Typography color="text.secondary" sx={{ mb: 1 }}>Status: {apt.status}</Typography>
-                                    {['pending', 'confirmed', 'in_progress'].includes(apt.status) && (
+
+                                    {/* Accept button for pending appointments */}
+                                    {apt.status === 'pending' && (
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                size="small"
+                                                onClick={() => updateStatus(apt.id, 'confirmed')}
+                                            >
+                                                Accept
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                color="error"
+                                                size="small"
+                                                onClick={() => updateStatus(apt.id, 'cancelled')}
+                                            >
+                                                Decline
+                                            </Button>
+                                        </Box>
+                                    )}
+
+                                    {/* Complete/No Show buttons for confirmed and in-progress appointments */}
+                                    {['confirmed', 'in_progress'].includes(apt.status) && (
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <Button
                                                 variant="contained"
