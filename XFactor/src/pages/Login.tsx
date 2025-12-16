@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, Box, Link, Alert } from '@mui/material';
+import { Paper, Typography, TextField, Button, Box, Link, Alert } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -34,11 +34,29 @@ export default function Login() {
     };
 
     return (
-        <Container maxWidth="sm" sx={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'grid',
+            placeItems: 'center',
+            pt: '80px',
+            px: 2,
+            overflow: 'auto'
+        }}>
             <MotionPaper
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                sx={{ p: 4, width: '100%', borderRadius: 4, border: '1px solid rgba(255,255,255,0.1)' }}
+                sx={{
+                    p: 4,
+                    width: '100%',
+                    maxWidth: '450px',
+                    margin: 'auto',
+                    borderRadius: 4,
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}
             >
                 <Typography variant="h4" align="center" gutterBottom fontWeight="bold">
                     Welcome Back
@@ -95,6 +113,6 @@ export default function Login() {
                     </Box>
                 </Box>
             </MotionPaper>
-        </Container>
+        </Box>
     );
 }
