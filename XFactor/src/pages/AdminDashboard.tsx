@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Container, Paper, CircularProgress, Grid, Card, CardContent } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, Grid, Card, CardContent } from '@mui/material';
 import { People, Store, Assessment, CalendarMonth } from '@mui/icons-material';
 
 export default function AdminDashboard() {
@@ -13,7 +13,6 @@ export default function AdminDashboard() {
         totalAppointments: 0,
         totalWorkers: 0
     });
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -46,20 +45,10 @@ export default function AdminDashboard() {
                 totalAppointments: appointments.count || 0,
                 totalWorkers: workers.count || 0
             });
-
-            setLoading(false);
         };
 
         fetchData();
     }, [navigate]);
-
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress color="primary" />
-            </Box>
-        );
-    }
 
     return (
         <Box sx={{
