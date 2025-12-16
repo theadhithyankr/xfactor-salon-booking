@@ -57,6 +57,14 @@ export default function MyBookings() {
         }
     };
 
+    const formatTime12Hour = (time24: string) => {
+        const [hours, minutes] = time24.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
+    };
+
     return (
         <Container maxWidth="lg" sx={{ py: 12, pt: 15 }}>
             <motion.div
@@ -114,7 +122,7 @@ export default function MyBookings() {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                     <AttachMoney sx={{ color: 'primary.main' }} />
                                                     <Typography variant="h5" color="primary.main" fontWeight="bold">
-                                                        ${appointment.total_price.toFixed(2)}
+                                                        ₹{appointment.total_price.toFixed(2)}
                                                     </Typography>
                                                 </Box>
                                             )}
@@ -124,7 +132,7 @@ export default function MyBookings() {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <CalendarMonth color="action" />
                                                 <Typography variant="body1">
-                                                    {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
+                                                    {new Date(appointment.appointment_date).toLocaleDateString('en-IN', {
                                                         weekday: 'short',
                                                         year: 'numeric',
                                                         month: 'short',
@@ -135,7 +143,7 @@ export default function MyBookings() {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <AccessTime color="action" />
                                                 <Typography variant="body1">
-                                                    {appointment.start_time} - {appointment.end_time}
+                                                    {formatTime12Hour(appointment.start_time)} - {formatTime12Hour(appointment.end_time)}
                                                 </Typography>
                                             </Box>
                                             {appointment.services?.duration_minutes && (

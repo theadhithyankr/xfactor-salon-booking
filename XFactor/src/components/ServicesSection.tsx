@@ -109,7 +109,7 @@ export default function ServicesSection() {
                                     </Typography>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                                         <Typography variant="h6" color="primary.main" fontWeight="bold">
-                                            ${service.price.toFixed(2)}
+                                            ₹{service.price.toFixed(2)}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                             {service.duration_minutes} min

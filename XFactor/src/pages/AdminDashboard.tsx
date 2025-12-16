@@ -146,12 +146,22 @@ export default function AdminDashboard() {
                     <Typography variant="h5" gutterBottom fontWeight="bold">Admin Controls</Typography>
                     <Grid container spacing={2} sx={{ mt: 2 }}>
                         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                            <Button variant="contained" fullWidth size="large">
-                                Manage Users
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                onClick={() => navigate('/admin/services')}
+                            >
+                                Manage Services
                             </Button>
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                            <Button variant="contained" fullWidth size="large">
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                onClick={() => navigate('/admin/salons')}
+                            >
                                 Manage Salons
                             </Button>
                         </Grid>

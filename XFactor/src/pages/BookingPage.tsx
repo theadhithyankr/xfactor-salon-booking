@@ -173,6 +173,7 @@ export default function BookingPage() {
                                         label="Time"
                                         value={selectedTime}
                                         onChange={(newValue) => setSelectedTime(newValue)}
+                                        ampm={true}
                                         sx={{ width: '100%' }}
                                     />
 
@@ -214,7 +215,7 @@ export default function BookingPage() {
                                 </Box>
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">Total Estimate</Typography>
-                                    <Typography variant="h6" color="primary.main">${servicePrice.toFixed(2)}</Typography>
+                                    <Typography variant="h6" color="primary.main">₹{servicePrice.toFixed(2)}</Typography>
                                 </Box>
                             </Stack>
                         </Box>
