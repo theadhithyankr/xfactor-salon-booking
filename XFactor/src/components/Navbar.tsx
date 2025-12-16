@@ -109,20 +109,23 @@ export default function Navbar() {
                             Salons
                         </Button>
 
-                        <Button
-                            onClick={() => navigate('/about')}
-                            sx={{
-                                color: 'text.primary',
-                                fontWeight: 500,
-                                fontSize: '1rem',
-                                '&:hover': {
-                                    color: 'primary.main',
-                                    backgroundColor: 'transparent',
-                                },
-                            }}
-                        >
-                            About
-                        </Button>
+                        {/* Hide "About" for workers and admins */}
+                        {(!user || userRole === 'customer') && (
+                            <Button
+                                onClick={() => navigate('/about')}
+                                sx={{
+                                    color: 'text.primary',
+                                    fontWeight: 500,
+                                    fontSize: '1rem',
+                                    '&:hover': {
+                                        color: 'primary.main',
+                                        backgroundColor: 'transparent',
+                                    },
+                                }}
+                            >
+                                About
+                            </Button>
+                        )}
 
                         {/* Show "My Bookings" for customers only */}
                         {user && userRole === 'customer' && (
@@ -142,8 +145,8 @@ export default function Navbar() {
                             </Button>
                         )}
 
-                        {/* Show "Dashboard" for workers and admins only */}
-                        {user && (userRole === 'worker' || userRole === 'admin') && (
+                        {/* Show "My Schedule" for workers */}
+                        {user && userRole === 'worker' && (
                             <Button
                                 onClick={() => navigate('/dashboard')}
                                 sx={{
@@ -156,7 +159,25 @@ export default function Navbar() {
                                     },
                                 }}
                             >
-                                Dashboard
+                                My Schedule
+                            </Button>
+                        )}
+
+                        {/* Show "Admin Panel" for admins */}
+                        {user && userRole === 'admin' && (
+                            <Button
+                                onClick={() => navigate('/dashboard')}
+                                sx={{
+                                    color: 'text.primary',
+                                    fontWeight: 500,
+                                    fontSize: '1rem',
+                                    '&:hover': {
+                                        color: 'primary.main',
+                                        backgroundColor: 'transparent',
+                                    },
+                                }}
+                            >
+                                Admin Panel
                             </Button>
                         )}
 
@@ -194,7 +215,7 @@ export default function Navbar() {
                             </Box>
                         )}
 
-                        {/* Book Now for logged-in customers */}
+                        {/* Book Now for logged-in customers ONLY */}
                         {user && userRole === 'customer' && (
                             <Button
                                 variant="contained"

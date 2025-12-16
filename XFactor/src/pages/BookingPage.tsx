@@ -12,7 +12,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 
-const steps = ['Select Service', 'Date & Time', 'Confirm'];
+const steps = ['Select Service', 'Select Professional', 'Date & Time', 'Confirm'];
 
 const MotionPaper = motion(Paper);
 
@@ -24,41 +24,68 @@ export default function BookingPage() {
     const [selectedTime, setSelectedTime] = useState<Dayjs | null>(dayjs().set('hour', 10).set('minute', 0));
     const [accessDenied, setAccessDenied] = useState(false);
 
+    // New state for worker selection
+    const [workers, setWorkers] = useState<any[]>([]);
+    const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
+
     // Get service from navigation state
     const service = location.state?.service || null;
     const serviceName = service?.name || 'General Service';
     const servicePrice = service?.price || 0;
     const serviceDuration = service?.duration_minutes || 60;
 
-    // Check if user is a customer
+    // Fetch workers on mount
     useEffect(() => {
-        const checkUserRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+        const fetchWorkers = async () => {
+            // In a real app, we might filter by salon_id if passed in state, or service capabilities.
+            const { data } = await supabase
+                .from('workers')
+                .select(`
+                    id, 
+                    rating,
+                    profile:profiles(full_name, avatar_url)
+                `)
+                .eq('is_available', true);
 
-            if (!user) {
-                // Not logged in - allow them to proceed, will be caught at booking time
-                return;
-            }
-
-            // Fetch user profile to check role
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', user.id)
-                .single();
-
-            if (profile && profile.role !== 'customer') {
-                setAccessDenied(true);
-                setTimeout(() => {
-                    navigate('/dashboard');
-                }, 3000);
+            if (data) {
+                setWorkers(data);
             }
         };
+        fetchWorkers();
+    }, []);
 
+    // ... (keep checkUserRole effect) ...
+
+    const checkUserRole = async () => {
+        // ... (keep existing logic)
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            // Not logged in - allow them to proceed, will be caught at booking time
+            return;
+        }
+
+        // Fetch user profile to check role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile && profile.role !== 'customer') {
+            setAccessDenied(true);
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 3000);
+        }
+    };
+
+    useEffect(() => {
         checkUserRole();
     }, [navigate]);
 
     if (accessDenied) {
+        // ... (keep existing access denied UI)
         return (
             <Container maxWidth="md" sx={{ py: 12, pt: 15 }}>
                 <Alert severity="warning" sx={{ mb: 3 }}>
@@ -91,6 +118,7 @@ export default function BookingPage() {
                 .insert({
                     customer_id: user.id,
                     service_id: service?.id || null,
+                    worker_id: selectedWorker?.id || null, // Add selected worker ID
                     appointment_date: selectedDate?.format('YYYY-MM-DD'),
                     start_time: selectedTime?.format('HH:mm'),
                     end_time: selectedTime?.add(serviceDuration, 'minute').format('HH:mm'),
@@ -161,6 +189,48 @@ export default function BookingPage() {
                     {activeStep === 1 && (
                         <Box>
                             <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
+                                Select a Professional
+                            </Typography>
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 12, md: 4 }}>
+                                    <Paper
+                                        onClick={() => setSelectedWorker(null)}
+                                        sx={{
+                                            p: 3,
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            border: selectedWorker === null ? '2px solid #FF0000' : '1px solid rgba(255,255,255,0.1)',
+                                            bgcolor: selectedWorker === null ? 'rgba(255,0,0,0.1)' : 'background.paper'
+                                        }}
+                                    >
+                                        <Typography variant="h6">Any Professional</Typography>
+                                        <Typography variant="body2" color="text.secondary">Maximum availability</Typography>
+                                    </Paper>
+                                </Grid>
+                                {workers.map((worker) => (
+                                    <Grid size={{ xs: 12, md: 4 }} key={worker.id}>
+                                        <Paper
+                                            onClick={() => setSelectedWorker(worker)}
+                                            sx={{
+                                                p: 3,
+                                                textAlign: 'center',
+                                                cursor: 'pointer',
+                                                border: selectedWorker?.id === worker.id ? '2px solid #FF0000' : '1px solid rgba(255,255,255,0.1)',
+                                                bgcolor: selectedWorker?.id === worker.id ? 'rgba(255,0,0,0.1)' : 'background.paper'
+                                            }}
+                                        >
+                                            <Typography variant="h6">{worker.profile?.full_name || 'Worker'}</Typography>
+                                            <Typography variant="body2" color="text.secondary">Rating: {worker.rating || 'New'}</Typography>
+                                        </Paper>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Box>
+                    )}
+
+                    {activeStep === 2 && (
+                        <Box>
+                            <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
                                 Schedule for <span style={{ color: '#FF0000' }}>{serviceName}</span>
                             </Typography>
 
@@ -222,7 +292,7 @@ export default function BookingPage() {
                         </Box>
                     )}
 
-                    {activeStep === 2 && (
+                    {activeStep === 3 && (
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                 Confirm Booking
@@ -232,6 +302,10 @@ export default function BookingPage() {
                                     <Box>
                                         <Typography variant="caption" color="text.secondary">Service</Typography>
                                         <Typography variant="h6">{serviceName}</Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Professional</Typography>
+                                        <Typography variant="h6">{selectedWorker ? selectedWorker.profile.full_name : 'Any Professional'}</Typography>
                                     </Box>
                                     <Box>
                                         <Typography variant="caption" color="text.secondary">Date</Typography>
