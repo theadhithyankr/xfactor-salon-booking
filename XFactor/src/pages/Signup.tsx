@@ -23,7 +23,7 @@ export default function Signup() {
 
         try {
             // 1. Sign up the user (create auth user)
-            const { data: authData, error: authError } = await supabase.auth.signUp({
+            const { error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
