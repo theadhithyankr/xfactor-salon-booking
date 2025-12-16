@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
-import CustomerDashboard from './CustomerDashboard';
 import WorkerDashboard from './WorkerDashboard';
 import AdminDashboard from './AdminDashboard';
 
@@ -30,6 +29,10 @@ export default function Dashboard() {
                 navigate('/login');
             } else {
                 setRole(data.role);
+                // Redirect customers to My Bookings
+                if (data.role === 'customer') {
+                    navigate('/my-bookings');
+                }
             }
             setLoading(false);
         };
@@ -45,10 +48,10 @@ export default function Dashboard() {
         );
     }
 
-    // Route to appropriate dashboard based on role
-    if (role === 'customer') return <CustomerDashboard />;
+    // Only workers and admins see dashboards
     if (role === 'worker') return <WorkerDashboard />;
     if (role === 'admin') return <AdminDashboard />;
 
+    // Customers are redirected above
     return null;
 }
