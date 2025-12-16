@@ -10,6 +10,7 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabase';
 
 const steps = ['Select Service', 'Date & Time', 'Confirm'];
 
@@ -25,10 +26,34 @@ export default function BookingPage() {
     // Mock data - in real app would come from DB
     const serviceName = location.state?.serviceName || 'General Service';
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (activeStep === steps.length - 1) {
-            // Handle booking submission
-            alert('Booking Confirmed! (Mock)');
+            // Check for user login
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                alert('Please login to book an appointment');
+                navigate('/login');
+                return;
+            }
+
+            // Insert into Supabase
+            const { error } = await supabase
+                .from('appointments')
+                .insert({
+                    customer_id: user.id,
+                    appointment_date: selectedDate?.format('YYYY-MM-DD'),
+                    start_time: selectedTime?.format('HH:mm'),
+                    end_time: selectedTime?.add(1, 'hour').format('HH:mm'), // Mock duration
+                    status: 'pending',
+                    // notes: notes // We need to add state for notes first
+                });
+
+            if (error) {
+                alert('Error booking appointment: ' + error.message);
+                return;
+            }
+
+            alert('Booking Confirmed! You can view it in your profile.');
             navigate('/');
         } else {
             setActiveStep((prev) => prev + 1);

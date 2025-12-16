@@ -34,12 +34,15 @@ export default function Navbar() {
 
                     {/* Nav Items */}
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        {['Services', 'Salons', 'About'].map((item, index) => (
+                        {['Services', 'Salons', 'About', 'Dashboard'].map((item, index) => (
                             <Button
                                 key={item}
                                 component={motion.button}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                    if (item === 'Dashboard') window.location.href = '/dashboard';
+                                }}
                                 sx={{
                                     color: 'text.secondary',
                                     fontWeight: 500,

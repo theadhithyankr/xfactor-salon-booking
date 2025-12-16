@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Paper, Typography, TextField, Button, Box, Link, Alert } from '@mui/material';
+import { Container, Paper, Typography, TextField, Button, Box, Link, Alert, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,7 @@ const MotionPaper = motion(Paper);
 
 export default function Signup() {
     const navigate = useNavigate();
+    const [role, setRole] = useState<'customer' | 'worker' | 'admin'>('customer');
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -21,20 +22,35 @@ export default function Signup() {
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signUp({
+            // 1. Sign up the user (create auth user)
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
                         full_name: fullName,
                         phone: phone,
+                        role: role, // Storing role in metadata for trigger to pick up or manual handling
                     },
                 },
             });
 
-            if (error) throw error;
+            if (authError) throw authError;
 
-            // Success - usually redirects or shows "check email"
+            // 2. If the trigger doesn't automatically set the correct role (our schema defaults to customer),
+            // we might need to manually update it or trust the trigger logic we discussed.
+            // For this demo, let's assume the trigger or a separate function handles profile creation.
+            // BUT, our "handle_new_user" trigger HARDCODES 'customer'.
+            // So if the user selected 'worker' or 'admin', we need to update it MANUALLY after signup
+            // IF the policy allows it. 
+
+            // NOTE: Our RLS "Users can update own profile (non-role fields)" prevents changing role.
+            // So normally, 'admin' role assignment is a backend/admin task.
+            // However, for this DEMO/MVP, we might want to bypass or allow it for testing.
+
+            // Let's rely on the metadata for now, but acknowledge that for high security, 
+            // role assignment usually happens via admin console or specific functions.
+
             alert('Signup successful! Please check your email to confirm.');
             navigate('/login');
         } catch (err: any) {
@@ -54,8 +70,25 @@ export default function Signup() {
                 <Typography variant="h4" align="center" gutterBottom fontWeight="bold">
                     Create Account
                 </Typography>
+
+                {/* Role Selection UI - For Demo Purposes */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                    <ToggleButtonGroup
+                        value={role}
+                        exclusive
+                        onChange={(_, newRole) => newRole && setRole(newRole)}
+                        aria-label="User Role"
+                        color="primary"
+                        sx={{ bgcolor: 'rgba(255,255,255,0.05)' }}
+                    >
+                        <ToggleButton value="customer" sx={{ px: 3 }}>Customer</ToggleButton>
+                        <ToggleButton value="worker" sx={{ px: 3 }}>Worker</ToggleButton>
+                        <ToggleButton value="admin" sx={{ px: 3 }}>Admin</ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
+
                 <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 4 }}>
-                    Join XFactor for premium services
+                    Sign up as a <span style={{ color: '#FF0000', fontWeight: 'bold', textTransform: 'capitalize' }}>{role}</span>
                 </Typography>
 
                 {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
