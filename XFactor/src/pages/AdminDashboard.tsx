@@ -155,6 +155,16 @@ export default function AdminDashboard() {
                             </Button>
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                onClick={() => navigate('/admin/workers')}
+                            >
+                                Manage Workers
+                            </Button>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                             <Button variant="contained" fullWidth size="large">
                                 View Reports
                             </Button>

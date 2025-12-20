@@ -30,7 +30,8 @@ export default function MyBookings() {
                     )
                 `)
                 .eq('customer_id', user.id)
-                .order('appointment_date', { ascending: false });
+                .order('appointment_date', { ascending: true })
+                .order('start_time', { ascending: true });
 
             setAppointments(appointmentsData || []);
             setLoading(false);
@@ -155,7 +156,7 @@ export default function MyBookings() {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: 12, pt: 15 }}>
+        <Container maxWidth="xl" sx={{ py: 12, pt: 15 }}>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -181,21 +182,29 @@ export default function MyBookings() {
                         </Button>
                     </Paper>
                 ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', lg: 'repeat(4, 1fr)' },
+                        gap: 3
+                    }}>
                         {appointments.map((appointment, index) => (
                             <motion.div
                                 key={appointment.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
+                                style={{ height: '100%', display: 'flex' }}
                             >
                                 <Card sx={{
+                                    width: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
                                     '&:hover': {
                                         boxShadow: '0 8px 24px rgba(255, 0, 0, 0.15)',
                                     },
                                     transition: 'all 0.3s ease'
                                 }}>
-                                    <CardContent sx={{ p: 3 }}>
+                                    <CardContent sx={{ p: 3, flexGrow: 1 }}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                                             <Box>
                                                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -217,7 +226,7 @@ export default function MyBookings() {
                                             )}
                                         </Box>
 
-                                        <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <CalendarMonth color="action" />
                                                 <Typography variant="body1">
@@ -236,7 +245,7 @@ export default function MyBookings() {
                                                 </Typography>
                                             </Box>
                                             {appointment.services?.duration_minutes && (
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
                                                     ({appointment.services.duration_minutes} min)
                                                 </Typography>
                                             )}
@@ -264,7 +273,7 @@ export default function MyBookings() {
                                                                 color="primary"
                                                                 onClick={() => handleAcceptProposal(appointment)}
                                                             >
-                                                                Accept New Time
+                                                                Accept
                                                             </Button>
                                                             <Button
                                                                 size="small"
@@ -272,7 +281,7 @@ export default function MyBookings() {
                                                                 color="inherit"
                                                                 onClick={() => handleDeclineProposal(appointment)}
                                                             >
-                                                                Keep Original
+                                                                Decline
                                                             </Button>
                                                         </Box>
                                                     </Box>
@@ -287,7 +296,7 @@ export default function MyBookings() {
                                                     color="error"
                                                     onClick={() => handleCancel(appointment.id)}
                                                 >
-                                                    Cancel Appointment
+                                                    Cancel
                                                 </Button>
                                             </Box>
                                         )}
@@ -298,6 +307,6 @@ export default function MyBookings() {
                     </Box>
                 )}
             </motion.div>
-        </Container>
+        </Container >
     );
 }
