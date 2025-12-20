@@ -265,7 +265,7 @@ export default function ManageSalons() {
                                     <TableCell>{salon.name}</TableCell>
                                     <TableCell>{salon.city}, {salon.state}</TableCell>
                                     <TableCell>{salon.phone}</TableCell>
-                                    <TableCell>{salon.opening_time} - {salon.closing_time}</TableCell>
+                                    <TableCell>{dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A')} - {dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A')}</TableCell>
                                     <TableCell>
                                         <Chip
                                             label={salon.is_active ? 'Active' : 'Inactive'}
@@ -331,7 +331,7 @@ export default function ManageSalons() {
                                     <strong>Phone:</strong> {salon.phone}
                                 </Typography>
                                 <Typography variant="body2">
-                                    <strong>Hours:</strong> {salon.opening_time} - {salon.closing_time}
+                                    <strong>Hours:</strong> {dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A')} - {dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A')}
                                 </Typography>
                             </Box>
 

@@ -172,7 +172,9 @@ export default function BookingPage() {
             const closing = selectedSalon.closing_time;
 
             if (timeStr < opening || endTime > closing) {
-                alert(`Please select a time range between ${opening} and ${closing}. Your total service time is ${totalDuration} mins.`);
+                const open12 = dayjs(opening, 'HH:mm:ss').format('h:mm A');
+                const close12 = dayjs(closing, 'HH:mm:ss').format('h:mm A');
+                alert(`Please select a time range between ${open12} and ${close12}. Your total service time is ${totalDuration} mins.`);
                 return false;
             }
         }

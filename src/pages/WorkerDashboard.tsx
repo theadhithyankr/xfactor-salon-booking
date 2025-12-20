@@ -123,7 +123,9 @@ export default function WorkerDashboard() {
 
         // Validation 1: Salon Hours
         if (timeStr < salon.opening_time || timeStr > salon.closing_time) {
-            alert(`Please select a time between ${salon.opening_time} and ${salon.closing_time}`);
+            const open12 = dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A');
+            const close12 = dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A');
+            alert(`Please select a time between ${open12} and ${close12}`);
             return;
         }
 
@@ -276,6 +278,7 @@ export default function WorkerDashboard() {
                                     label="New Time"
                                     value={newTime}
                                     onChange={(val) => setNewTime(val)}
+                                    ampm={true}
                                     slotProps={{ textField: { fullWidth: true } }}
                                 />
                             </Box>

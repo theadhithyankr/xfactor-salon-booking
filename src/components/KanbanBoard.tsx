@@ -128,7 +128,7 @@ export default function KanbanBoard({ appointments, onStatusChange, onReschedule
 
                                                         <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                             <AccessTime fontSize="small" />
-                                                            {apt.start_time.slice(0, 5)} - {apt.end_time.slice(0, 5)}
+                                                            {dayjs(apt.start_time, 'HH:mm:ss').format('h:mm A')} - {dayjs(apt.end_time, 'HH:mm:ss').format('h:mm A')}
                                                         </Typography>
 
                                                         <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
