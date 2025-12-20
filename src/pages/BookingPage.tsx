@@ -88,16 +88,10 @@ export default function BookingPage() {
             const { data } = await query;
             if (data) {
                 setServices(data);
-
-                // If there's a pre-selected service and we just selected a salon,
-                // make sure the pre-selected service is still in the selected list
-                if (preSelectedService && !selectedServices.find(s => s.id === preSelectedService.id)) {
-                    setSelectedServices([preSelectedService]);
-                }
             }
         };
         fetchServices();
-    }, [selectedSalon, preSelectedService]);
+    }, [selectedSalon]);
 
 
     // Fetch Workers when Salon IS Selected
@@ -151,15 +145,31 @@ export default function BookingPage() {
 
     if (accessDenied) {
         return (
-            <Container maxWidth="md" sx={{ py: 12, pt: 15 }}>
-                <Alert severity="warning" sx={{ mb: 3 }}>
-                    <Typography variant="h6" gutterBottom>Access Restricted</Typography>
-                    <Typography>Appointment booking is only available for customers.</Typography>
-                    <Typography sx={{ mt: 2 }}>Redirecting to dashboard...</Typography>
-                </Alert>
-            </Container>
+            <Box sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pt: '80px'
+            }}>
+                <Container maxWidth="md">
+                    <Alert severity="warning" sx={{ mb: 3 }}>
+                        <Typography variant="h6" gutterBottom>Access Restricted</Typography>
+                        <Typography>Appointment booking is only available for customers.</Typography>
+                        <Typography sx={{ mt: 2 }}>Redirecting to dashboard...</Typography>
+                    </Alert>
+                </Container>
+            </Box>
         );
     }
+
+    console.log('BookingPage render:', {
+        accessDenied,
+        bookingSuccess,
+        activeStep,
+        salonsCount: salons.length,
+        servicesCount: services.length
+    });
 
     const toggleService = (service: any) => {
         if (selectedServices.find(s => s.id === service.id)) {
@@ -218,146 +228,158 @@ export default function BookingPage() {
             }
 
             return true;
-        };
+        }
 
-        const handleNext = async () => {
-            if (activeStep === steps.length - 1) {
-                // CONFIRMATION STEP
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    showNotification('Please login to book an appointment', 'info');
-                    navigate('/login');
+        return true;
+    };
+
+    const handleNext = async () => {
+        if (activeStep === steps.length - 1) {
+            // CONFIRMATION STEP
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                showNotification('Please login to book an appointment', 'info');
+                navigate('/login');
+                return;
+            }
+
+            // Create Sequential Appointments
+            let currentStartTime = selectedTime;
+
+            for (const service of selectedServices) {
+                if (!currentStartTime) break; // Should not happen
+
+                // Calculate End Time for THIS service
+                const serviceDuration = service.duration_minutes || 60;
+                const endTime = currentStartTime.add(serviceDuration, 'minute');
+
+                const { error } = await supabase
+                    .from('appointments')
+                    .insert({
+                        customer_id: user.id,
+                        service_id: service.id,
+                        salon_id: selectedSalon?.id,
+                        worker_id: selectedWorker?.id || null,
+                        appointment_date: selectedDate?.format('YYYY-MM-DD'),
+                        start_time: currentStartTime.format('HH:mm'),
+                        end_time: endTime.format('HH:mm'),
+                        status: 'pending',
+                        total_price: service.price,
+                        notes: `Sequential booking. ${selectedServices.length > 1 ? '(Multi-service)' : ''}`
+                    });
+
+                if (error) {
+                    showNotification('Error booking service: ' + service.name + '. ' + error.message, 'error');
                     return;
                 }
 
-                // Create Sequential Appointments
-                let currentStartTime = selectedTime;
-
-                for (const service of selectedServices) {
-                    if (!currentStartTime) break; // Should not happen
-
-                    // Calculate End Time for THIS service
-                    const serviceDuration = service.duration_minutes || 60;
-                    const endTime = currentStartTime.add(serviceDuration, 'minute');
-
-                    const { error } = await supabase
-                        .from('appointments')
-                        .insert({
-                            customer_id: user.id,
-                            service_id: service.id,
-                            salon_id: selectedSalon?.id,
-                            worker_id: selectedWorker?.id || null,
-                            appointment_date: selectedDate?.format('YYYY-MM-DD'),
-                            start_time: currentStartTime.format('HH:mm'),
-                            end_time: endTime.format('HH:mm'),
-                            status: 'pending',
-                            total_price: service.price,
-                            notes: `Sequential booking. ${selectedServices.length > 1 ? '(Multi-service)' : ''}`
-                        });
-
-                    if (error) {
-                        showNotification('Error booking service: ' + service.name + '. ' + error.message, 'error');
-                        return;
-                    }
-
-                    // Advance start time for next service
-                    currentStartTime = endTime;
-                }
-
-                setBookingSuccess(true);
-            } else {
-                // Validation before moving next
-                if (activeStep === 0 && !selectedSalon) return showNotification('Please select a salon', 'warning');
-                if (activeStep === 1 && selectedServices.length === 0) return showNotification('Please select at least one service', 'warning');
-                if (activeStep === 3) {
-                    const isAvailable = await checkAvailability();
-                    if (!isAvailable) return;
-                }
-
-                setActiveStep((prev) => prev + 1);
+                // Advance start time for next service
+                currentStartTime = endTime;
             }
-        };
 
-        const handleBack = () => {
-            setActiveStep((prev) => prev - 1);
-        };
+            setBookingSuccess(true);
+        } else {
+            // Validation before moving next
+            if (activeStep === 0 && !selectedSalon) return showNotification('Please select a salon', 'warning');
+            if (activeStep === 1 && selectedServices.length === 0) return showNotification('Please select at least one service', 'warning');
+            if (activeStep === 3) {
+                const isAvailable = await checkAvailability();
+                if (!isAvailable) return;
+            }
 
-        return (
-            <Box sx={{
-                minHeight: '100dvh',
-                width: '100dvw',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-start',
-                alignItems: 'center',
-                pt: { xs: '80px', md: '100px' },
-                pb: { xs: '100px', md: 4 }, // Extra padding for sticky footer on mobile
-                bgcolor: 'background.default'
-            }}>
-                <Container maxWidth="md" sx={{ py: { xs: 3, md: 6 }, px: { xs: 2, md: 3 } }}>
-                    {!bookingSuccess && (
-                        <>
-                            <Typography variant="h3" align="center" gutterBottom fontWeight="800" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
-                                Book Appointment
+            setActiveStep((prev) => prev + 1);
+        }
+    };
+
+    const handleBack = () => {
+        setActiveStep((prev) => prev - 1);
+    };
+
+    return (
+        <Box sx={{
+            minHeight: '100dvh',
+            width: '100dvw',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            pt: { xs: '80px', md: '100px' },
+            pb: { xs: '100px', md: 4 }, // Extra padding for sticky footer on mobile
+            bgcolor: 'background.default'
+        }}>
+            <Container maxWidth="md" sx={{ py: { xs: 3, md: 6 }, px: { xs: 2, md: 3 } }}>
+                {!bookingSuccess && (
+                    <>
+                        <Typography variant="h3" align="center" gutterBottom fontWeight="800" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
+                            Book Appointment
+                        </Typography>
+
+                        {/* Desktop Stepper */}
+                        <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 8 }}>
+                            <Stepper activeStep={activeStep} alternativeLabel>
+                                {steps.map((label) => (
+                                    <Step key={label}><StepLabel>{label}</StepLabel></Step>
+                                ))}
+                            </Stepper>
+                        </Box>
+
+                        {/* Mobile Step Indicator - REMOVED (Replaced by MobileStepper at bottom) */}
+                    </>
+                )}
+
+                <MotionPaper
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    sx={{
+                        p: { xs: 2, md: 4 },
+                        borderRadius: 4,
+                        bgcolor: 'background.paper',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}
+                >
+                    {bookingSuccess ? (
+                        <Box sx={{ textAlign: 'center', py: 4 }}>
+                            <CheckCircleOutlineIcon color="success" sx={{ fontSize: 80, mb: 2, color: '#4caf50' }} />
+                            <Typography variant="h4" gutterBottom fontWeight="bold">
+                                Booking Successful!
                             </Typography>
-
-                            {/* Desktop Stepper */}
-                            <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 8 }}>
-                                <Stepper activeStep={activeStep} alternativeLabel>
-                                    {steps.map((label) => (
-                                        <Step key={label}><StepLabel>{label}</StepLabel></Step>
-                                    ))}
-                                </Stepper>
-                            </Box>
-
-                            {/* Mobile Step Indicator - REMOVED (Replaced by MobileStepper at bottom) */}
-                        </>
-                    )}
-
-                    <MotionPaper
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        sx={{
-                            p: { xs: 2, md: 4 },
-                            borderRadius: 4,
-                            bgcolor: 'background.paper',
-                            border: '1px solid rgba(255,255,255,0.1)'
-                        }}
-                    >
-                        {bookingSuccess ? (
-                            <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <CheckCircleOutlineIcon color="success" sx={{ fontSize: 80, mb: 2, color: '#4caf50' }} />
-                                <Typography variant="h4" gutterBottom fontWeight="bold">
-                                    Booking Successful!
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                                    Your appointments have been scheduled sequentially. <br />
-                                    You can view them in your dashboard.
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    onClick={() => navigate('/dashboard')}
-                                    sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
-                                >
-                                    Go to Dashboard
-                                </Button>
-                            </Box>
-                        ) : (
-                            <>
-                                {/* STEP 0: SELECT SALON */}
-                                {activeStep === 0 && (
-                                    <Box>
-                                        {preSelectedService && (
-                                            <Alert severity="info" sx={{ mb: 3 }}>
-                                                Booking service: <strong>{preSelectedService.name}</strong>. Select a salon that offers this service.
-                                            </Alert>
-                                        )}
-                                        <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
-                                            Select a Salon
-                                        </Typography>
-                                        <Grid container spacing={2}>
-                                            {salons.map((salon) => (
+                            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                                Your appointments have been scheduled sequentially. <br />
+                                You can view them in your dashboard.
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                size="large"
+                                onClick={() => navigate('/dashboard')}
+                                sx={{ px: 6, py: 1.5, fontSize: '1.1rem' }}
+                            >
+                                Go to Dashboard
+                            </Button>
+                        </Box>
+                    ) : (
+                        <>
+                            {/* STEP 0: SELECT SALON */}
+                            {activeStep === 0 && (
+                                <Box>
+                                    {preSelectedService && (
+                                        <Alert severity="info" sx={{ mb: 3 }}>
+                                            Booking service: <strong>{preSelectedService.name}</strong>. Select a salon that offers this service.
+                                        </Alert>
+                                    )}
+                                    <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
+                                        Select a Salon
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {salons.length === 0 ? (
+                                            <Grid size={{ xs: 12 }}>
+                                                <Typography variant="body1" color="text.secondary" align="center" sx={{ py: 4 }}>
+                                                    {preSelectedService
+                                                        ? `No salons currently offer "${preSelectedService.name}". Please try another service.`
+                                                        : "No salons available at the moment. Please check back later."}
+                                                </Typography>
+                                            </Grid>
+                                        ) : (
+                                            salons.map((salon) => (
                                                 <Grid size={{ xs: 12, md: 6 }} key={salon.id}>
                                                     <Paper
                                                         onClick={() => setSelectedSalon(salon)}
@@ -375,237 +397,237 @@ export default function BookingPage() {
                                                         <Typography variant="body2" color="text.secondary">{salon.city}, {salon.state}</Typography>
                                                     </Paper>
                                                 </Grid>
-                                            ))}
-                                        </Grid>
-                                    </Box>
-                                )}
+                                            ))
+                                        )}
+                                    </Grid>
+                                </Box>
+                            )}
 
-                                {/* STEP 1: SELECT SERVICES (Multiple) */}
-                                {activeStep === 1 && (
-                                    <Box>
-                                        <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
-                                            Select Services
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-                                            Click to select multiple services
-                                        </Typography>
-                                        <Grid container spacing={2}>
-                                            {services.map((svc) => {
-                                                const isSelected = selectedServices.some(s => s.id === svc.id);
-                                                return (
-                                                    <Grid size={{ xs: 12, md: 6 }} key={svc.id}>
-                                                        <Paper
-                                                            onClick={() => toggleService(svc)}
-                                                            sx={{
-                                                                p: 2,
-                                                                cursor: 'pointer',
-                                                                border: isSelected ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
-                                                                bgcolor: isSelected ? 'rgba(255,0,0,0.05)' : 'background.paper',
-                                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                            elevation={isSelected ? 4 : 1}
-                                                        >
-                                                            <Box>
-                                                                <Typography variant="h6" fontSize="1rem">{svc.name}</Typography>
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    {svc.duration_minutes} min • ₹{svc.price}
-                                                                </Typography>
-                                                            </Box>
-                                                            {isSelected && <Chip label="Selected" color="primary" size="small" />}
-                                                        </Paper>
-                                                    </Grid>
-                                                );
-                                            })}
-                                        </Grid>
-                                        {services.length === 0 && <Typography align="center">No services found for this salon.</Typography>}
-                                    </Box>
-                                )}
-
-                                {/* STEP 2: SELECT PROFESSIONAL */}
-                                {activeStep === 2 && (
-                                    <Box>
-                                        <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
-                                            Select a Professional
-                                        </Typography>
-                                        <Grid container spacing={2}>
-                                            <Grid size={{ xs: 12, md: 4 }}>
-                                                <Paper
-                                                    onClick={() => setSelectedWorker(null)}
-                                                    sx={{
-                                                        p: 3, textAlign: 'center', cursor: 'pointer',
-                                                        border: selectedWorker === null ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
-                                                        bgcolor: selectedWorker === null ? 'rgba(255,0,0,0.05)' : 'background.paper'
-                                                    }}
-                                                    elevation={selectedWorker === null ? 4 : 1}
-                                                >
-                                                    <Typography variant="h6">Any Professional</Typography>
-                                                    <Typography variant="body2" color="text.secondary">Maximum availability</Typography>
-                                                </Paper>
-                                            </Grid>
-                                            {workers.map((worker) => (
-                                                <Grid size={{ xs: 12, md: 4 }} key={worker.id}>
+                            {/* STEP 1: SELECT SERVICES (Multiple) */}
+                            {activeStep === 1 && (
+                                <Box>
+                                    <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
+                                        Select Services
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                                        Click to select multiple services
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        {services.map((svc) => {
+                                            const isSelected = selectedServices.some(s => s.id === svc.id);
+                                            return (
+                                                <Grid size={{ xs: 12, md: 6 }} key={svc.id}>
                                                     <Paper
-                                                        onClick={() => setSelectedWorker(worker)}
+                                                        onClick={() => toggleService(svc)}
                                                         sx={{
-                                                            p: 3, textAlign: 'center', cursor: 'pointer',
-                                                            border: selectedWorker?.id === worker.id ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
-                                                            bgcolor: selectedWorker?.id === worker.id ? 'rgba(255,0,0,0.05)' : 'background.paper'
+                                                            p: 2,
+                                                            cursor: 'pointer',
+                                                            border: isSelected ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                            bgcolor: isSelected ? 'rgba(255,0,0,0.05)' : 'background.paper',
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            transition: 'all 0.2s'
                                                         }}
-                                                        elevation={selectedWorker?.id === worker.id ? 4 : 1}
+                                                        elevation={isSelected ? 4 : 1}
                                                     >
-                                                        <Typography variant="h6">{worker.profile?.full_name || 'Worker'}</Typography>
-                                                        <Typography variant="body2" color="text.secondary">Rating: {worker.rating || 'New'}</Typography>
+                                                        <Box>
+                                                            <Typography variant="h6" fontSize="1rem">{svc.name}</Typography>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                {svc.duration_minutes} min • ₹{svc.price}
+                                                            </Typography>
+                                                        </Box>
+                                                        {isSelected && <Chip label="Selected" color="primary" size="small" />}
                                                     </Paper>
                                                 </Grid>
-                                            ))}
+                                            );
+                                        })}
+                                    </Grid>
+                                    {services.length === 0 && <Typography align="center">No services found for this salon.</Typography>}
+                                </Box>
+                            )}
+
+                            {/* STEP 2: SELECT PROFESSIONAL */}
+                            {activeStep === 2 && (
+                                <Box>
+                                    <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
+                                        Select a Professional
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid size={{ xs: 12, md: 4 }}>
+                                            <Paper
+                                                onClick={() => setSelectedWorker(null)}
+                                                sx={{
+                                                    p: 3, textAlign: 'center', cursor: 'pointer',
+                                                    border: selectedWorker === null ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                    bgcolor: selectedWorker === null ? 'rgba(255,0,0,0.05)' : 'background.paper'
+                                                }}
+                                                elevation={selectedWorker === null ? 4 : 1}
+                                            >
+                                                <Typography variant="h6">Any Professional</Typography>
+                                                <Typography variant="body2" color="text.secondary">Maximum availability</Typography>
+                                            </Paper>
                                         </Grid>
-                                        {workers.length === 0 && <Typography align="center" sx={{ mt: 2 }}>No specific professionals found at this location.</Typography>}
-                                    </Box>
-                                )}
+                                        {workers.map((worker) => (
+                                            <Grid size={{ xs: 12, md: 4 }} key={worker.id}>
+                                                <Paper
+                                                    onClick={() => setSelectedWorker(worker)}
+                                                    sx={{
+                                                        p: 3, textAlign: 'center', cursor: 'pointer',
+                                                        border: selectedWorker?.id === worker.id ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                        bgcolor: selectedWorker?.id === worker.id ? 'rgba(255,0,0,0.05)' : 'background.paper'
+                                                    }}
+                                                    elevation={selectedWorker?.id === worker.id ? 4 : 1}
+                                                >
+                                                    <Typography variant="h6">{worker.profile?.full_name || 'Worker'}</Typography>
+                                                    <Typography variant="body2" color="text.secondary">Rating: {worker.rating || 'New'}</Typography>
+                                                </Paper>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                    {workers.length === 0 && <Typography align="center" sx={{ mt: 2 }}>No specific professionals found at this location.</Typography>}
+                                </Box>
+                            )}
 
-                                {/* STEP 3: DATE & TIME */}
-                                {activeStep === 3 && (
-                                    <Box>
-                                        <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
-                                            Schedule
-                                        </Typography>
-                                        <Typography align="center" variant="subtitle1" sx={{ mb: 2 }}>
-                                            Duration: {getTotalDuration()} mins
-                                        </Typography>
+                            {/* STEP 3: DATE & TIME */}
+                            {activeStep === 3 && (
+                                <Box>
+                                    <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
+                                        Schedule
+                                    </Typography>
+                                    <Typography align="center" variant="subtitle1" sx={{ mb: 2 }}>
+                                        Duration: {getTotalDuration()} mins
+                                    </Typography>
 
-                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                            <Grid container spacing={4}>
-                                                <Grid size={{ xs: 12, md: 6 }}>
-                                                    <Typography variant="subtitle1" gutterBottom>Select Date</Typography>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                                                        <DateCalendar
-                                                            value={selectedDate}
-                                                            onChange={(newValue) => setSelectedDate(newValue)}
-                                                            sx={{
-                                                                bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #333',
-                                                                width: '100%', maxWidth: '100%'
-                                                            }}
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <Grid container spacing={4}>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <Typography variant="subtitle1" gutterBottom>Select Date</Typography>
+                                                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                                    <DateCalendar
+                                                        value={selectedDate}
+                                                        onChange={(newValue) => setSelectedDate(newValue)}
+                                                        sx={{
+                                                            bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #333',
+                                                            width: '100%', maxWidth: '100%'
+                                                        }}
+                                                    />
+                                                </Box>
+                                            </Grid>
+                                            <Grid size={{ xs: 12, md: 6 }}>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                    <Box>
+                                                        <Typography variant="subtitle1" gutterBottom>Select Start Time</Typography>
+                                                        <TimePicker
+                                                            label="Time"
+                                                            value={selectedTime}
+                                                            onChange={(newValue) => setSelectedTime(newValue)}
+                                                            ampm={true}
+                                                            slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputBase-root': { bgcolor: 'background.paper' } } } }}
                                                         />
                                                     </Box>
-                                                </Grid>
-                                                <Grid size={{ xs: 12, md: 6 }}>
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                        <Box>
-                                                            <Typography variant="subtitle1" gutterBottom>Select Start Time</Typography>
-                                                            <TimePicker
-                                                                label="Time"
-                                                                value={selectedTime}
-                                                                onChange={(newValue) => setSelectedTime(newValue)}
-                                                                ampm={true}
-                                                                slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputBase-root': { bgcolor: 'background.paper' } } } }}
-                                                            />
-                                                        </Box>
-                                                        <Box sx={{ mt: 2 }}>
-                                                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Notes</Typography>
-                                                            <TextField
-                                                                fullWidth multiline rows={4}
-                                                                placeholder="Any specific instructions?"
-                                                            />
-                                                        </Box>
+                                                    <Box sx={{ mt: 2 }}>
+                                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>Notes</Typography>
+                                                        <TextField
+                                                            fullWidth multiline rows={4}
+                                                            placeholder="Any specific instructions?"
+                                                        />
                                                     </Box>
-                                                </Grid>
+                                                </Box>
                                             </Grid>
-                                        </LocalizationProvider>
-                                    </Box>
-                                )}
-
-                                {/* STEP 4: CONFIRM */}
-                                {activeStep === 4 && (
-                                    <Box sx={{ textAlign: 'center' }}>
-                                        <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                                            Confirm Booking
-                                        </Typography>
-                                        <Box sx={{ my: 4, p: 3, bgcolor: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 2, display: 'inline-block', textAlign: 'left', minWidth: { xs: '100%', md: '400px' } }}>
-                                            <Stack spacing={2}>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">Salon</Typography>
-                                                    <Typography variant="h6">{selectedSalon?.name}</Typography>
-                                                    <Typography variant="body2" color="text.secondary">{selectedSalon?.address}</Typography>
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">Selected Services</Typography>
-                                                    {selectedServices.map((s) => (
-                                                        <Typography key={s.id} variant="body1">• {s.name} ({s.duration_minutes}m)</Typography>
-                                                    ))}
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">Professional</Typography>
-                                                    <Typography variant="h6">{selectedWorker ? selectedWorker.profile.full_name : 'Any Professional'}</Typography>
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">Date & Time</Typography>
-                                                    <Typography variant="h6">
-                                                        {selectedDate?.format('ddd, MMM D')} at {selectedTime?.format('h:mm A')}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        Total Duration: {getTotalDuration()} mins
-                                                    </Typography>
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">Total Estimate</Typography>
-                                                    <Typography variant="h6" color="primary.main">₹{getTotalPrice().toFixed(2)}</Typography>
-                                                </Box>
-                                            </Stack>
-                                        </Box>
-                                    </Box>
-                                )}
-
-                                {/* Desktop Buttons */}
-                                <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'space-between', mt: 6, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                    <Button
-                                        disabled={activeStep === 0}
-                                        onClick={handleBack}
-                                        sx={{ mr: 1 }}
-                                    >
-                                        Back
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        onClick={handleNext}
-                                        size="large"
-                                        sx={{ px: 6 }}
-                                    >
-                                        {activeStep === steps.length - 1 ? 'Confirm Booking' : 'Next'}
-                                    </Button>
+                                        </Grid>
+                                    </LocalizationProvider>
                                 </Box>
+                            )}
 
-                                {/* Mobile Stepper (Standard MUI Component) */}
-                                <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-                                    <MobileStepper
-                                        variant="dots"
-                                        steps={steps.length}
-                                        position="bottom"
-                                        activeStep={activeStep}
-                                        sx={{ bgcolor: 'background.paper', borderTop: '1px solid rgba(0,0,0,0.1)' }}
-                                        nextButton={
-                                            <Button
-                                                size="small"
-                                                onClick={handleNext}
-                                                disabled={activeStep === steps.length} // logic might need tweak if logic is same as handleNext checks
-                                            >
-                                                {activeStep === steps.length - 1 ? 'Confirm' : 'Next'}
-                                                <KeyboardArrowRight />
-                                            </Button>
-                                        }
-                                        backButton={
-                                            <Button size="small" onClick={handleBack} disabled={activeStep === 0}>
-                                                <KeyboardArrowLeft />
-                                                Back
-                                            </Button>
-                                        }
-                                    />
+                            {/* STEP 4: CONFIRM */}
+                            {activeStep === 4 && (
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                        Confirm Booking
+                                    </Typography>
+                                    <Box sx={{ my: 4, p: 3, bgcolor: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 2, display: 'inline-block', textAlign: 'left', minWidth: { xs: '100%', md: '400px' } }}>
+                                        <Stack spacing={2}>
+                                            <Box>
+                                                <Typography variant="caption" color="text.secondary">Salon</Typography>
+                                                <Typography variant="h6">{selectedSalon?.name}</Typography>
+                                                <Typography variant="body2" color="text.secondary">{selectedSalon?.address}</Typography>
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="caption" color="text.secondary">Selected Services</Typography>
+                                                {selectedServices.map((s) => (
+                                                    <Typography key={s.id} variant="body1">• {s.name} ({s.duration_minutes}m)</Typography>
+                                                ))}
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="caption" color="text.secondary">Professional</Typography>
+                                                <Typography variant="h6">{selectedWorker ? selectedWorker.profile.full_name : 'Any Professional'}</Typography>
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="caption" color="text.secondary">Date & Time</Typography>
+                                                <Typography variant="h6">
+                                                    {selectedDate?.format('ddd, MMM D')} at {selectedTime?.format('h:mm A')}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Total Duration: {getTotalDuration()} mins
+                                                </Typography>
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="caption" color="text.secondary">Total Estimate</Typography>
+                                                <Typography variant="h6" color="primary.main">₹{getTotalPrice().toFixed(2)}</Typography>
+                                            </Box>
+                                        </Stack>
+                                    </Box>
                                 </Box>
-                            </>
-                        )}
-                    </MotionPaper>
-                </Container>
-            </Box>
-        );
-    }
+                            )}
+
+                            {/* Desktop Buttons */}
+                            <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'space-between', mt: 6, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <Button
+                                    disabled={activeStep === 0}
+                                    onClick={handleBack}
+                                    sx={{ mr: 1 }}
+                                >
+                                    Back
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    onClick={handleNext}
+                                    size="large"
+                                    sx={{ px: 6 }}
+                                >
+                                    {activeStep === steps.length - 1 ? 'Confirm Booking' : 'Next'}
+                                </Button>
+                            </Box>
+
+                            {/* Mobile Stepper (Standard MUI Component) */}
+                            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+                                <MobileStepper
+                                    variant="dots"
+                                    steps={steps.length}
+                                    position="bottom"
+                                    activeStep={activeStep}
+                                    sx={{ bgcolor: 'background.paper', borderTop: '1px solid rgba(0,0,0,0.1)' }}
+                                    nextButton={
+                                        <Button
+                                            size="small"
+                                            onClick={handleNext}
+                                            disabled={activeStep === steps.length} // logic might need tweak if logic is same as handleNext checks
+                                        >
+                                            {activeStep === steps.length - 1 ? 'Confirm' : 'Next'}
+                                            <KeyboardArrowRight />
+                                        </Button>
+                                    }
+                                    backButton={
+                                        <Button size="small" onClick={handleBack} disabled={activeStep === 0}>
+                                            <KeyboardArrowLeft />
+                                            Back
+                                        </Button>
+                                    }
+                                />
+                            </Box>
+                        </>
+                    )}
+                </MotionPaper>
+            </Container>
+        </Box>
+    );
 }
