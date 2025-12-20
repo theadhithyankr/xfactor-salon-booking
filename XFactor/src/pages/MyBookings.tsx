@@ -66,6 +66,86 @@ export default function MyBookings() {
         }
     };
 
+    // Helper to parse proposal
+    const getProposal = (notes: string | null) => {
+        if (!notes) return null;
+        const match = notes.match(/RESCHEDULE_PROPOSAL: ({.*})/);
+        try {
+            return match ? JSON.parse(match[1]) : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const handleAcceptProposal = async (appointment: any) => {
+        const proposal = getProposal(appointment.notes);
+        if (!proposal) return;
+
+        const cleanNotes = appointment.notes.replace(/\n?RESCHEDULE_PROPOSAL: \{.*\}/g, '');
+
+        const { error } = await supabase
+            .from('appointments')
+            .update({
+                appointment_date: proposal.date,
+                start_time: proposal.time,
+                end_time: proposal.end_time || proposal.time, // Fallback if missing
+                notes: cleanNotes,
+                status: 'confirmed'
+            })
+            .eq('id', appointment.id);
+
+        if (error) {
+            alert('Error accepting proposal: ' + error.message);
+        } else {
+            alert('Reschedule confirmed!');
+            // Refresh list or update local
+            setAppointments(appointments.map(apt =>
+                apt.id === appointment.id ? {
+                    ...apt,
+                    appointment_date: proposal.date,
+                    start_time: proposal.time,
+                    end_time: proposal.end_time,
+                    notes: cleanNotes,
+                    status: 'confirmed'
+                } : apt
+            ));
+        }
+    };
+
+    const handleDeclineProposal = async (appointment: any) => {
+        const cleanNotes = appointment.notes.replace(/\n?RESCHEDULE_PROPOSAL: \{.*\}/g, '');
+
+        const { error } = await supabase
+            .from('appointments')
+            .update({ notes: cleanNotes })
+            .eq('id', appointment.id);
+
+        if (error) {
+            alert('Error declining proposal: ' + error.message);
+        } else {
+            setAppointments(appointments.map(apt =>
+                apt.id === appointment.id ? { ...apt, notes: cleanNotes } : apt
+            ));
+        }
+    };
+
+    const handleCancel = async (id: string) => {
+        if (!confirm('Are you sure you want to cancel this appointment?')) return;
+
+        const { error } = await supabase
+            .from('appointments')
+            .update({ status: 'cancelled' })
+            .eq('id', id);
+
+        if (error) {
+            alert('Error cancelling appointment: ' + error.message);
+        } else {
+            setAppointments(appointments.map(apt =>
+                apt.id === id ? { ...apt, status: 'cancelled' } : apt
+            ));
+        }
+    };
+
     const formatTime12Hour = (time24: string) => {
         const [hours, minutes] = time24.split(':');
         const hour = parseInt(hours);
@@ -165,8 +245,50 @@ export default function MyBookings() {
                                         {appointment.notes && (
                                             <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    <strong>Notes:</strong> {appointment.notes}
+                                                    <strong>Notes:</strong> {appointment.notes.replace(/RESCHEDULE_PROPOSAL: \{.*\}/g, '')}
                                                 </Typography>
+
+                                                {/* Proposal UI */}
+                                                {getProposal(appointment.notes) && (
+                                                    <Box sx={{ mt: 2, p: 2, border: '1px dashed #FF0000', borderRadius: 1, bgcolor: 'rgba(255,0,0,0.05)' }}>
+                                                        <Typography variant="subtitle2" color="error" gutterBottom fontWeight="bold">
+                                                            Worker Proposed New Time:
+                                                        </Typography>
+                                                        <Typography variant="body2" sx={{ mb: 2 }}>
+                                                            {new Date(getProposal(appointment.notes).date).toLocaleDateString()} at {formatTime12Hour(getProposal(appointment.notes).time)}
+                                                        </Typography>
+                                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                                            <Button
+                                                                size="small"
+                                                                variant="contained"
+                                                                color="primary"
+                                                                onClick={() => handleAcceptProposal(appointment)}
+                                                            >
+                                                                Accept New Time
+                                                            </Button>
+                                                            <Button
+                                                                size="small"
+                                                                variant="outlined"
+                                                                color="inherit"
+                                                                onClick={() => handleDeclineProposal(appointment)}
+                                                            >
+                                                                Keep Original
+                                                            </Button>
+                                                        </Box>
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        )}
+
+                                        {['pending', 'confirmed'].includes(appointment.status) && (
+                                            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                                                <Button
+                                                    variant="outlined"
+                                                    color="error"
+                                                    onClick={() => handleCancel(appointment.id)}
+                                                >
+                                                    Cancel Appointment
+                                                </Button>
                                             </Box>
                                         )}
                                     </CardContent>

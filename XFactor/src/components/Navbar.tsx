@@ -79,20 +79,23 @@ export default function Navbar() {
 
                     {/* Nav Items */}
                     <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                        <Button
-                            onClick={() => navigate('/')}
-                            sx={{
-                                color: 'text.primary',
-                                fontWeight: 500,
-                                fontSize: '1rem',
-                                '&:hover': {
-                                    color: 'primary.main',
-                                    backgroundColor: 'transparent',
-                                },
-                            }}
-                        >
-                            Home
-                        </Button>
+                        {/* Only show "Home" for guests and customers */}
+                        {(!user || userRole === 'customer') && (
+                            <Button
+                                onClick={() => navigate('/')}
+                                sx={{
+                                    color: 'text.primary',
+                                    fontWeight: 500,
+                                    fontSize: '1rem',
+                                    '&:hover': {
+                                        color: 'primary.main',
+                                        backgroundColor: 'transparent',
+                                    },
+                                }}
+                            >
+                                Home
+                            </Button>
+                        )}
 
                         <Button
                             onClick={() => navigate('/salons')}

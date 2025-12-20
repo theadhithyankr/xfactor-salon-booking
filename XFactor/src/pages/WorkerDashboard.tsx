@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Container, Paper, CircularProgress, Grid, Card, CardContent, Button } from '@mui/material';
+import { Box, Typography, Container, Paper, Grid, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import { Work, Schedule, Star } from '@mui/icons-material';
+import { LocalizationProvider, DateCalendar, TimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import KanbanBoard from '../components/KanbanBoard';
+import CenteredLoader from '../components/CenteredLoader';
 
 export default function WorkerDashboard() {
     const navigate = useNavigate();
     const [profile, setProfile] = useState<any>(null);
     const [workerData, setWorkerData] = useState<any>(null);
+    const [salon, setSalon] = useState<any>(null);
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Reschedule State
+    const [rescheduleOpen, setRescheduleOpen] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+    const [newDate, setNewDate] = useState<Dayjs | null>(dayjs());
+    const [newTime, setNewTime] = useState<Dayjs | null>(dayjs().set('hour', 10).set('minute', 0));
 
     useEffect(() => {
         const fetchData = async () => {
@@ -37,14 +49,24 @@ export default function WorkerDashboard() {
 
             setWorkerData(worker);
 
-            // Fetch appointments assigned to this worker
-            if (worker) {
-                const { data: appointmentsData } = await supabase
-                    .from('appointments')
+            if (worker && worker.salon_id) {
+                // Fetch Salon Details
+                const { data: salonData } = await supabase
+                    .from('salons')
                     .select('*')
-                    .eq('worker_id', worker.id)
+                    .eq('id', worker.salon_id)
+                    .single();
+                setSalon(salonData);
+
+                // Fetch appointments: Assigned to me OR (Unassigned AND in my salon)
+                const { data: appointmentsData, error } = await supabase
+                    .from('appointments')
+                    .select('*, profiles(*), services(*)')
+                    .eq('salon_id', worker.salon_id)
+                    .or(`worker_id.eq.${worker.id},worker_id.is.null`)
                     .order('appointment_date', { ascending: true });
 
+                if (error) console.error('Error fetching appointments:', error);
                 setAppointments(appointmentsData || []);
             }
 
@@ -54,10 +76,17 @@ export default function WorkerDashboard() {
         fetchData();
     }, [navigate]);
 
-    const updateStatus = async (id: string, status: string) => {
+    const handleStatusChange = async (id: string, newStatus: string) => {
+        const updates: any = { status: newStatus };
+
+        // If accepting a pending appointment (moving to confirmed/in_progress), assign to me
+        if (newStatus === 'confirmed' || newStatus === 'in_progress') {
+            updates.worker_id = workerData.id;
+        }
+
         const { error } = await supabase
             .from('appointments')
-            .update({ status })
+            .update(updates)
             .eq('id', id);
 
         if (error) {
@@ -65,26 +94,81 @@ export default function WorkerDashboard() {
         } else {
             // Update local state
             setAppointments(appointments.map(apt =>
-                apt.id === id ? { ...apt, status } : apt
+                apt.id === id ? { ...apt, ...updates } : apt
             ));
         }
     };
 
+    const handleRescheduleClick = (appointment: any) => {
+        setSelectedAppointment(appointment);
+        setNewDate(dayjs(appointment.appointment_date));
+        setNewTime(dayjs(appointment.start_time, 'HH:mm:ss'));
+        setRescheduleOpen(true);
+    };
+
+    const submitReschedule = async () => {
+        if (!selectedAppointment || !newDate || !newTime || !salon) return;
+
+        const dateStr = newDate.format('YYYY-MM-DD');
+        const timeStr = newTime.format('HH:mm:ss');
+
+        // Validation 1: Salon Hours
+        if (timeStr < salon.opening_time || timeStr > salon.closing_time) {
+            alert(`Please select a time between ${salon.opening_time} and ${salon.closing_time}`);
+            return;
+        }
+
+        // Validation 2: Conflict
+        // Check if *THIS* worker is busy
+        const workerId = selectedAppointment.worker_id || workerData.id;
+
+        // Estimate end time
+        const duration = selectedAppointment.services?.duration_minutes || 60;
+        const endStr = newTime.add(duration, 'minute').format('HH:mm:ss');
+
+        const { data: conflicts } = await supabase
+            .from('appointments')
+            .select('id')
+            .eq('worker_id', workerId)
+            .eq('appointment_date', dateStr)
+            .neq('id', selectedAppointment.id) // Exclude self
+            .or(`and(start_time.lte.${timeStr},end_time.gt.${timeStr}),and(start_time.lt.${endStr},end_time.gte.${endStr})`);
+
+        if (conflicts && conflicts.length > 0) {
+            alert('You are already booked during this time.');
+            return;
+        }
+
+        // Update Appointment Notes with Proposal
+        const proposal = JSON.stringify({
+            date: dateStr,
+            time: timeStr,
+            end_time: endStr
+        });
+
+        // Append proposal to existing notes (or create new)
+        // Be careful not to duplicate proposals
+        const cleanNotes = (selectedAppointment.notes || '').replace(/\nRESCHEDULE_PROPOSAL: \{.*\}/g, '');
+        const newNotes = cleanNotes + `\nRESCHEDULE_PROPOSAL: ${proposal}`;
+
+        const { error } = await supabase
+            .from('appointments')
+            .update({ notes: newNotes })
+            .eq('id', selectedAppointment.id);
+
+        if (error) {
+            alert('Error sending proposal: ' + error.message);
+        } else {
+            alert('Reschedule proposal sent to customer via notes.');
+            setAppointments(appointments.map(apt =>
+                apt.id === selectedAppointment.id ? { ...apt, notes: newNotes } : apt
+            ));
+            setRescheduleOpen(false);
+        }
+    };
+
     if (loading) {
-        return (
-            <Box sx={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-            }}>
-                <CircularProgress color="primary" />
-            </Box>
-        );
+        return <CenteredLoader />;
     }
 
     return (
@@ -100,7 +184,7 @@ export default function WorkerDashboard() {
             pt: '80px',
             overflow: 'auto',
         }}>
-            <Container maxWidth="lg">
+            <Container maxWidth="xl">
                 <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
                     <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
                         Worker Dashboard
@@ -117,8 +201,10 @@ export default function WorkerDashboard() {
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                     <Schedule sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
                                     <Box>
-                                        <Typography variant="h4" fontWeight="bold">{appointments.length}</Typography>
-                                        <Typography variant="body2" color="text.secondary">Total Appointments</Typography>
+                                        <Typography variant="h4" fontWeight="bold">
+                                            {appointments.filter(a => a.worker_id === workerData?.id && a.status !== 'completed' && a.status !== 'cancelled').length}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">My Active Appointments</Typography>
                                     </Box>
                                 </Box>
                             </CardContent>
@@ -152,66 +238,41 @@ export default function WorkerDashboard() {
                     </Grid>
                 </Grid>
 
-                <Paper sx={{ p: 4 }}>
-                    <Typography variant="h5" gutterBottom fontWeight="bold">My Schedule</Typography>
-                    {appointments.length === 0 ? (
-                        <Typography color="text.secondary">No appointments scheduled</Typography>
-                    ) : (
-                        <Box>
-                            {appointments.map((apt) => (
-                                <Card key={apt.id} sx={{ mb: 2, p: 2 }}>
-                                    <Typography variant="h6">Appointment on {apt.appointment_date}</Typography>
-                                    <Typography color="text.secondary">Time: {apt.start_time} - {apt.end_time}</Typography>
-                                    <Typography color="text.secondary" sx={{ mb: 1 }}>Status: {apt.status}</Typography>
-
-                                    {/* Accept button for pending appointments */}
-                                    {apt.status === 'pending' && (
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Button
-                                                variant="contained"
-                                                color="primary"
-                                                size="small"
-                                                onClick={() => updateStatus(apt.id, 'confirmed')}
-                                            >
-                                                Accept
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                color="error"
-                                                size="small"
-                                                onClick={() => updateStatus(apt.id, 'cancelled')}
-                                            >
-                                                Decline
-                                            </Button>
-                                        </Box>
-                                    )}
-
-                                    {/* Complete/No Show buttons for confirmed and in-progress appointments */}
-                                    {['confirmed', 'in_progress'].includes(apt.status) && (
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Button
-                                                variant="contained"
-                                                color="success"
-                                                size="small"
-                                                onClick={() => updateStatus(apt.id, 'completed')}
-                                            >
-                                                Complete
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                color="error"
-                                                size="small"
-                                                onClick={() => updateStatus(apt.id, 'cancelled')}
-                                            >
-                                                No Show
-                                            </Button>
-                                        </Box>
-                                    )}
-                                </Card>
-                            ))}
-                        </Box>
-                    )}
+                <Paper sx={{ p: 2, bgcolor: 'transparent' }}>
+                    <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 3 }}>Task Board</Typography>
+                    <KanbanBoard
+                        appointments={appointments}
+                        onStatusChange={handleStatusChange}
+                        onReschedule={handleRescheduleClick}
+                        currentWorkerId={workerData?.id}
+                    />
                 </Paper>
+
+                {/* Reschedule Dialog */}
+                <Dialog open={rescheduleOpen} onClose={() => setRescheduleOpen(false)}>
+                    <DialogTitle>Propose New Time</DialogTitle>
+                    <DialogContent sx={{ minWidth: 300, pt: 2 }}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+                                <DateCalendar
+                                    value={newDate}
+                                    onChange={(val) => setNewDate(val)}
+                                />
+                                <TimePicker
+                                    label="New Time"
+                                    value={newTime}
+                                    onChange={(val) => setNewTime(val)}
+                                    slotProps={{ textField: { fullWidth: true } }}
+                                />
+                            </Box>
+                        </LocalizationProvider>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setRescheduleOpen(false)}>Cancel</Button>
+                        <Button variant="contained" onClick={submitReschedule}>Propose</Button>
+                    </DialogActions>
+                </Dialog>
+
             </Container >
         </Box >
     );

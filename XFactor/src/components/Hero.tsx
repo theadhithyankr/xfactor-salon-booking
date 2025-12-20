@@ -1,7 +1,10 @@
 import { Box, Typography, Button, Container, Stack } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 export default function Hero() {
+    const navigate = useNavigate();
+
     return (
         <Box
             sx={{
@@ -85,6 +88,7 @@ export default function Hero() {
                             <Button
                                 variant="contained"
                                 size="large"
+                                onClick={() => navigate('/book')}
                                 sx={{
                                     fontSize: '1.2rem',
                                     px: 4, py: 1.5,
@@ -96,6 +100,7 @@ export default function Hero() {
                                 variant="outlined"
                                 size="large"
                                 color="inherit" // White outline
+                                onClick={() => navigate('/salons')}
                                 sx={{
                                     fontSize: '1.2rem',
                                     px: 4, py: 1.5,

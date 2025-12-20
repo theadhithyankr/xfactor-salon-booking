@@ -140,6 +140,45 @@ export default function BookingPage() {
         );
     }
 
+    const checkAvailability = async () => {
+        if (!selectedSalon || !selectedDate || !selectedTime) return false;
+
+        // 1. Check Salon Hours
+        if (selectedSalon.opening_time && selectedSalon.closing_time) {
+            const timeStr = selectedTime.format('HH:mm:ss');
+            const opening = selectedSalon.opening_time;
+            const closing = selectedSalon.closing_time;
+
+            if (timeStr < opening || timeStr > closing) {
+                alert(`Please select a time between ${opening} and ${closing}`);
+                return false;
+            }
+        }
+
+        // 2. Check Worker Availability (Conflict)
+        if (selectedWorker) {
+            const startStr = selectedTime.format('HH:mm:ss');
+            // Estimate end time based on service duration
+            const duration = selectedService?.duration_minutes || 60;
+            const endStr = selectedTime.add(duration, 'minute').format('HH:mm:ss');
+            const dateStr = selectedDate.format('YYYY-MM-DD');
+
+            const { data: conflicts } = await supabase
+                .from('appointments')
+                .select('id')
+                .eq('worker_id', selectedWorker.id)
+                .eq('appointment_date', dateStr)
+                .or(`and(start_time.lte.${startStr},end_time.gt.${startStr}),and(start_time.lt.${endStr},end_time.gte.${endStr})`);
+
+            if (conflicts && conflicts.length > 0) {
+                alert('This professional is already booked at this time. Please choose another slot.');
+                return false;
+            }
+        }
+
+        return true;
+    };
+
     const handleNext = async () => {
         if (activeStep === steps.length - 1) {
             // CONFIRMATION STEP
@@ -156,7 +195,7 @@ export default function BookingPage() {
                     customer_id: user.id,
                     service_id: selectedService?.id,
                     salon_id: selectedSalon?.id, // Track Salon ID
-                    worker_id: selectedWorker?.id || null,
+                    worker_id: selectedWorker?.id || null, // Null for 'Any Professional'
                     appointment_date: selectedDate?.format('YYYY-MM-DD'),
                     start_time: selectedTime?.format('HH:mm'),
                     end_time: selectedTime?.add(selectedService?.duration_minutes || 60, 'minute').format('HH:mm'),
@@ -175,6 +214,10 @@ export default function BookingPage() {
             // Validation before moving next
             if (activeStep === 0 && !selectedSalon) return alert('Please select a salon');
             if (activeStep === 1 && !selectedService) return alert('Please select a service');
+            if (activeStep === 3) {
+                const isAvailable = await checkAvailability();
+                if (!isAvailable) return;
+            }
 
             setActiveStep((prev) => prev + 1);
         }
