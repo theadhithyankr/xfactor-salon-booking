@@ -7,10 +7,13 @@ import { LocalizationProvider, DateCalendar, TimePicker } from '@mui/x-date-pick
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import KanbanBoard from '../components/KanbanBoard';
+
 import CenteredLoader from '../components/CenteredLoader';
+import { useNotification } from '../context/NotificationContext';
 
 export default function WorkerDashboard() {
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
     const [profile, setProfile] = useState<any>(null);
     const [workerData, setWorkerData] = useState<any>(null);
     const [salon, setSalon] = useState<any>(null);
@@ -99,7 +102,7 @@ export default function WorkerDashboard() {
             .eq('id', id);
 
         if (error) {
-            alert('Error updating status: ' + error.message);
+            showNotification('Error updating status: ' + error.message, 'error');
         } else {
             // Update local state
             setAppointments(appointments.map(apt =>
@@ -125,7 +128,7 @@ export default function WorkerDashboard() {
         if (timeStr < salon.opening_time || timeStr > salon.closing_time) {
             const open12 = dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A');
             const close12 = dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A');
-            alert(`Please select a time between ${open12} and ${close12}`);
+            showNotification(`Please select a time between ${open12} and ${close12}`, 'warning');
             return;
         }
 
@@ -146,7 +149,7 @@ export default function WorkerDashboard() {
             .or(`and(start_time.lte.${timeStr},end_time.gt.${timeStr}),and(start_time.lt.${endStr},end_time.gte.${endStr})`);
 
         if (conflicts && conflicts.length > 0) {
-            alert('You are already booked during this time.');
+            showNotification('You are already booked during this time.', 'warning');
             return;
         }
 
@@ -168,9 +171,9 @@ export default function WorkerDashboard() {
             .eq('id', selectedAppointment.id);
 
         if (error) {
-            alert('Error sending proposal: ' + error.message);
+            showNotification('Error sending proposal: ' + error.message, 'error');
         } else {
-            alert('Reschedule proposal sent to customer via notes.');
+            showNotification('Reschedule proposal sent to customer via notes.', 'success');
             setAppointments(appointments.map(apt =>
                 apt.id === selectedAppointment.id ? { ...apt, notes: newNotes } : apt
             ));

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Container, Paper, Typography, TextField, Button, Box, Link, Alert, InputAdornment, IconButton } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useNotification } from '../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -9,6 +10,7 @@ const MotionPaper = motion(Paper);
 
 export default function Signup() {
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -36,7 +38,10 @@ export default function Signup() {
                 },
             });
 
-            if (authError) throw authError;
+            if (authError) {
+                showNotification(authError.message, 'error');
+                return; // Stop execution if there's an auth error
+            }
 
             // 2. If the trigger doesn't automatically set the correct role (our schema defaults to customer),
             // we might need to manually update it or trust the trigger logic we discussed.
@@ -52,10 +57,11 @@ export default function Signup() {
             // Let's rely on the metadata for now, but acknowledge that for high security, 
             // role assignment usually happens via admin console or specific functions.
 
-            alert('Signup successful! Please check your email to confirm.');
+            showNotification('Signup successful! Please check your email to confirm.', 'success');
             navigate('/login');
         } catch (err: any) {
-            setError(err.message);
+            showNotification(err.message, 'error');
+            setError(err.message); // Keep this for the Alert component if it's still desired
         } finally {
             setLoading(false);
         }

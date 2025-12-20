@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     Container, Typography, Box, Paper, Button, TextField,
-    Dialog, DialogTitle, DialogContent, DialogActions,
+    Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     IconButton, Chip, Grid, CircularProgress
 } from '@mui/material';
@@ -12,6 +12,7 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { useNotification } from '../context/NotificationContext';
 
 type Salon = {
     id?: string;
@@ -30,6 +31,7 @@ type Salon = {
 
 export default function ManageSalons() {
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
     const [salons, setSalons] = useState<Salon[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -48,6 +50,11 @@ export default function ManageSalons() {
         is_active: true,
         image_url: ''
     });
+
+    // Confirmation Dialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
 
     useEffect(() => {
         checkAdminAccess();
@@ -138,7 +145,7 @@ export default function ManageSalons() {
 
             setFormData({ ...formData, image_url: data.publicUrl });
         } catch (error: any) {
-            alert('Error uploading image: ' + error.message);
+            showNotification('Error uploading image: ' + error.message, 'error');
         } finally {
             setUploading(false);
         }
@@ -164,24 +171,35 @@ export default function ManageSalons() {
             fetchSalons();
             handleCloseDialog();
         } catch (error: any) {
-            alert('Error saving salon: ' + error.message);
+            showNotification('Error saving salon: ' + error.message, 'error');
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this salon?')) return;
+    const handleDeleteClick = (id: string) => {
+        setConfirmMessage('Are you sure you want to delete this salon?');
+        setConfirmAction(() => async () => {
+            try {
+                const { error } = await supabase
+                    .from('salons')
+                    .delete()
+                    .eq('id', id);
 
-        try {
-            const { error } = await supabase
-                .from('salons')
-                .delete()
-                .eq('id', id);
+                if (error) throw error;
+                fetchSalons();
+                showNotification('Salon deleted successfully', 'success');
+            } catch (error: any) {
+                showNotification('Error deleting salon: ' + error.message, 'error');
+            }
+        });
+        setConfirmOpen(true);
+    };
 
-            if (error) throw error;
-            fetchSalons();
-        } catch (error: any) {
-            alert('Error deleting salon: ' + error.message);
+    const handleConfirm = async () => {
+        if (confirmAction) {
+            await confirmAction();
         }
+        setConfirmOpen(false);
+        setConfirmAction(null);
     };
 
     const handleToggleActive = async (salon: Salon) => {
@@ -194,7 +212,7 @@ export default function ManageSalons() {
             if (error) throw error;
             fetchSalons();
         } catch (error: any) {
-            alert('Error updating salon: ' + error.message);
+            showNotification('Error updating salon: ' + error.message, 'error');
         }
     };
 
@@ -285,7 +303,7 @@ export default function ManageSalons() {
                                         </IconButton>
                                         <IconButton
                                             size="small"
-                                            onClick={() => handleDelete(salon.id!)}
+                                            onClick={() => handleDeleteClick(salon.id!)}
                                             color="error"
                                         >
                                             <Delete />
@@ -339,7 +357,7 @@ export default function ManageSalons() {
                                 <Button startIcon={<Edit />} size="small" onClick={() => handleOpenDialog(salon)}>
                                     Edit
                                 </Button>
-                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDelete(salon.id!)}>
+                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDeleteClick(salon.id!)}>
                                     Delete
                                 </Button>
                             </Box>
@@ -472,6 +490,25 @@ export default function ManageSalons() {
                         <Button onClick={handleCloseDialog}>Cancel</Button>
                         <Button onClick={handleSave} variant="contained" disabled={uploading}>
                             {editingSalon ? 'Update' : 'Create'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Confirmation Dialog */}
+                <Dialog
+                    open={confirmOpen}
+                    onClose={() => setConfirmOpen(false)}
+                >
+                    <DialogTitle>Confirm Action</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            {confirmMessage}
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                        <Button onClick={handleConfirm} variant="contained" color="error" autoFocus>
+                            Confirm
                         </Button>
                     </DialogActions>
                 </Dialog>

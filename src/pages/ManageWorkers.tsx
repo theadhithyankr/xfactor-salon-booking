@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     Container, Typography, Box, Paper, Button, TextField,
-    Dialog, DialogTitle, DialogContent, DialogActions,
+    Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     IconButton, Chip, MenuItem, Avatar,
     Tabs, Tab, Alert, CircularProgress
@@ -10,15 +10,22 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../context/NotificationContext';
 
 export default function ManageWorkers() {
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
     const [workers, setWorkers] = useState<any[]>([]);
     const [salons, setSalons] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]); // Potential workers
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingWorker, setEditingWorker] = useState<any | null>(null);
+
+    // Confirmation Dialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
 
     // Form Mode: 'promote' (existing user) or 'create' (new user)
     const [createMode, setCreateMode] = useState<'promote' | 'create'>('promote');
@@ -186,7 +193,7 @@ export default function ManageWorkers() {
                 if (createMode === 'create') {
                     // 1. Create User Logic
                     if (!formData.email || !formData.password || !formData.full_name) {
-                        return alert("Email, Password, and Name are required.");
+                        return showNotification("Email, Password, and Name are required.", 'warning');
                     }
                     targetProfileId = await createNewUser();
 
@@ -203,16 +210,16 @@ export default function ManageWorkers() {
 
                     if (profileError) {
                         console.error("Profile Upsert Error", profileError);
-                        alert("Worker account created, but Profile update failed (likely permission issue). The worker will appear as 'Unknown'. Please run the 'fix_permissions.sql' script in Supabase.");
+                        showNotification("Worker account created, but Profile update failed (likely permission issue). The worker will appear as 'Unknown'. Please run the 'fix_permissions.sql' script in Supabase.", 'warning');
                     }
                 } else {
                     // Promote Existing
-                    if (!targetProfileId) return alert("Please select a user.");
+                    if (!targetProfileId) return showNotification("Please select a user.", 'warning');
                     // Update Role
                     await supabase.from('profiles').update({ role: 'worker' }).eq('id', targetProfileId);
                 }
 
-                if (!formData.salon_id) return alert('Please select a salon');
+                if (!formData.salon_id) return showNotification('Please select a salon', 'warning');
 
                 // 2. Insert Worker Record
                 const { error: workerError } = await supabase
@@ -234,32 +241,43 @@ export default function ManageWorkers() {
             handleCloseDialog();
         } catch (error: any) {
             console.error(error);
-            alert('Error: ' + (error.message || "Unknown error"));
+            showNotification('Error: ' + (error.message || "Unknown error"), 'error');
         }
     };
 
-    const handleDelete = async (worker: any) => {
-        if (!confirm(`Are you sure you want to remove ${worker.profile?.full_name || 'this worker'}? This will downgrade them to 'customer'.`)) return;
+    const handleDeleteClick = (worker: any) => {
+        setConfirmMessage(`Are you sure you want to remove ${worker.profile?.full_name || 'this worker'}? This will downgrade them to 'customer'.`);
+        setConfirmAction(() => async () => {
+            try {
+                const { error: deleteError } = await supabase
+                    .from('workers')
+                    .delete()
+                    .eq('id', worker.id);
 
-        try {
-            const { error: deleteError } = await supabase
-                .from('workers')
-                .delete()
-                .eq('id', worker.id);
+                if (deleteError) throw deleteError;
 
-            if (deleteError) throw deleteError;
+                if (worker.profile_id) {
+                    await supabase
+                        .from('profiles')
+                        .update({ role: 'customer' })
+                        .eq('id', worker.profile_id);
+                }
 
-            if (worker.profile_id) {
-                await supabase
-                    .from('profiles')
-                    .update({ role: 'customer' })
-                    .eq('id', worker.profile_id);
+                showNotification('Worker removed successfully', 'success');
+                fetchData();
+            } catch (error: any) {
+                showNotification('Error deleting worker: ' + error.message, 'error');
             }
+        });
+        setConfirmOpen(true);
+    };
 
-            fetchData();
-        } catch (error: any) {
-            alert('Error deleting worker: ' + error.message);
+    const handleConfirm = async () => {
+        if (confirmAction) {
+            await confirmAction();
         }
+        setConfirmOpen(false);
+        setConfirmAction(null);
     };
 
     if (loading) {
@@ -333,7 +351,7 @@ export default function ManageWorkers() {
                                         <IconButton onClick={() => handleOpenDialog(worker)} color="primary">
                                             <Edit />
                                         </IconButton>
-                                        <IconButton onClick={() => handleDelete(worker)} color="error">
+                                        <IconButton onClick={() => handleDeleteClick(worker)} color="error">
                                             <Delete />
                                         </IconButton>
                                     </TableCell>
@@ -382,7 +400,7 @@ export default function ManageWorkers() {
                                 <Button startIcon={<Edit />} size="small" onClick={() => handleOpenDialog(worker)}>
                                     Edit
                                 </Button>
-                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDelete(worker)}>
+                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDeleteClick(worker)}>
                                     Delete
                                 </Button>
                             </Box>
@@ -522,6 +540,25 @@ export default function ManageWorkers() {
                         <Button onClick={handleCloseDialog}>Cancel</Button>
                         <Button onClick={handleSave} variant="contained">
                             {editingWorker ? 'Update' : (createMode === 'create' ? 'Create User & Worker' : 'Promote & Save')}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Confirmation Dialog */}
+                <Dialog
+                    open={confirmOpen}
+                    onClose={() => setConfirmOpen(false)}
+                >
+                    <DialogTitle>Confirm Action</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            {confirmMessage}
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                        <Button onClick={handleConfirm} variant="contained" color="error" autoFocus>
+                            Confirm
                         </Button>
                     </DialogActions>
                 </Dialog>

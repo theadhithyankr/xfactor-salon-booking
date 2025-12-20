@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Container, Paper, CircularProgress, Card, CardContent, Button, Chip } from '@mui/material';
+import { Box, Typography, Container, Paper, CircularProgress, Card, CardContent, CardActions, Button, Chip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { CalendarMonth, AccessTime, AttachMoney } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useNotification } from '../context/NotificationContext';
 
 export default function MyBookings() {
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Confirmation Dialog State
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
 
     useEffect(() => {
         const fetchAppointments = async () => {
@@ -96,9 +103,9 @@ export default function MyBookings() {
             .eq('id', appointment.id);
 
         if (error) {
-            alert('Error accepting proposal: ' + error.message);
+            showNotification('Error accepting proposal: ' + error.message, 'error');
         } else {
-            alert('Reschedule confirmed!');
+            showNotification('Reschedule confirmed!', 'success');
             // Refresh list or update local
             setAppointments(appointments.map(apt =>
                 apt.id === appointment.id ? {
@@ -122,7 +129,7 @@ export default function MyBookings() {
             .eq('id', appointment.id);
 
         if (error) {
-            alert('Error declining proposal: ' + error.message);
+            showNotification('Error declining proposal: ' + error.message, 'error');
         } else {
             setAppointments(appointments.map(apt =>
                 apt.id === appointment.id ? { ...apt, notes: cleanNotes } : apt
@@ -130,21 +137,52 @@ export default function MyBookings() {
         }
     };
 
-    const handleCancel = async (id: string) => {
-        if (!confirm('Are you sure you want to cancel this appointment?')) return;
+    const handleCancelClick = (id: string, event: React.MouseEvent) => {
+        event.stopPropagation();
+        setConfirmMessage('Are you sure you want to cancel this appointment?');
+        setConfirmAction(() => async () => {
+            const { error } = await supabase
+                .from('appointments')
+                .update({ status: 'cancelled' })
+                .eq('id', id);
 
-        const { error } = await supabase
-            .from('appointments')
-            .update({ status: 'cancelled' })
-            .eq('id', id);
+            if (error) {
+                showNotification('Error cancelling appointment: ' + error.message, 'error');
+            } else {
+                showNotification('Appointment cancelled', 'success');
+                setAppointments(prev => prev.map(apt =>
+                    apt.id === id ? { ...apt, status: 'cancelled' } : apt
+                ));
+            }
+        });
+        setConfirmOpen(true);
+    };
 
-        if (error) {
-            alert('Error cancelling appointment: ' + error.message);
-        } else {
-            setAppointments(appointments.map(apt =>
-                apt.id === id ? { ...apt, status: 'cancelled' } : apt
-            ));
+    const handleDeleteClick = (id: string, event: React.MouseEvent) => {
+        event.stopPropagation();
+        setConfirmMessage('Are you sure you want to delete this booking record permanently?');
+        setConfirmAction(() => async () => {
+            const { error } = await supabase
+                .from('appointments')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                showNotification('Error deleting appointment: ' + error.message, 'error');
+            } else {
+                showNotification('Appointment deleted', 'success');
+                setAppointments(prev => prev.filter(apt => apt.id !== id));
+            }
+        });
+        setConfirmOpen(true);
+    };
+
+    const handleConfirm = async () => {
+        if (confirmAction) {
+            await confirmAction();
         }
+        setConfirmOpen(false);
+        setConfirmAction(null);
     };
 
     const formatTime12Hour = (time24: string) => {
@@ -289,24 +327,53 @@ export default function MyBookings() {
                                             </Box>
                                         )}
 
-                                        {['pending', 'confirmed'].includes(appointment.status) && (
-                                            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                                                <Button
-                                                    variant="outlined"
-                                                    color="error"
-                                                    onClick={() => handleCancel(appointment.id)}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </Box>
-                                        )}
                                     </CardContent>
+                                    <CardActions sx={{ p: 2, justifyContent: 'flex-end', mt: 'auto' }}>
+                                        {['pending', 'confirmed'].includes((appointment.status || '').toLowerCase().trim()) && (
+                                            <Button
+                                                variant="outlined"
+                                                color="error"
+                                                onClick={(e) => handleCancelClick(appointment.id, e)}
+                                            >
+                                                Cancel
+                                            </Button>
+                                        )}
+
+                                        {['cancelled', 'completed'].includes((appointment.status || '').toLowerCase().trim()) && (
+                                            <Button
+                                                variant="outlined"
+                                                color="warning"
+                                                onClick={(e) => handleDeleteClick(appointment.id, e)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        )}
+                                    </CardActions>
                                 </Card>
                             </motion.div>
                         ))}
                     </Box>
                 )}
             </motion.div>
+
+            {/* Confirmation Dialog */}
+            <Dialog
+                open={confirmOpen}
+                onClose={() => setConfirmOpen(false)}
+            >
+                <DialogTitle>Confirm Action</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {confirmMessage}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                    <Button onClick={handleConfirm} variant="contained" color="primary" autoFocus>
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container >
     );
 }

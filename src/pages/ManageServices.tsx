@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     Container, Typography, Box, Paper, Button, TextField,
-    Dialog, DialogTitle, DialogContent, DialogActions,
+    Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     IconButton, Chip, Select, MenuItem, FormControl, InputLabel,
     Grid, CircularProgress
@@ -9,6 +9,7 @@ import {
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../context/NotificationContext';
 
 type Service = {
     id?: string;
@@ -23,6 +24,7 @@ type Service = {
 
 export default function ManageServices() {
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -37,6 +39,11 @@ export default function ManageServices() {
         image_url: '',
         is_active: true
     });
+
+    // Confirmation Dialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
 
     useEffect(() => {
         checkAdminAccess();
@@ -124,7 +131,7 @@ export default function ManageServices() {
 
             setFormData({ ...formData, image_url: data.publicUrl });
         } catch (error: any) {
-            alert('Error uploading image: ' + error.message);
+            showNotification('Error uploading image: ' + error.message, 'error');
         } finally {
             setUploading(false);
         }
@@ -152,24 +159,35 @@ export default function ManageServices() {
             fetchServices();
             handleCloseDialog();
         } catch (error: any) {
-            alert('Error saving service: ' + error.message);
+            showNotification('Error saving service: ' + error.message, 'error');
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this service?')) return;
+    const handleDeleteClick = (id: string) => {
+        setConfirmMessage('Are you sure you want to delete this service?');
+        setConfirmAction(() => async () => {
+            try {
+                const { error } = await supabase
+                    .from('services')
+                    .delete()
+                    .eq('id', id);
 
-        try {
-            const { error } = await supabase
-                .from('services')
-                .delete()
-                .eq('id', id);
+                if (error) throw error;
+                fetchServices();
+                showNotification('Service deleted successfully', 'success');
+            } catch (error: any) {
+                showNotification('Error deleting service: ' + error.message, 'error');
+            }
+        });
+        setConfirmOpen(true);
+    };
 
-            if (error) throw error;
-            fetchServices();
-        } catch (error: any) {
-            alert('Error deleting service: ' + error.message);
+    const handleConfirm = async () => {
+        if (confirmAction) {
+            await confirmAction();
         }
+        setConfirmOpen(false);
+        setConfirmAction(null);
     };
 
     const handleToggleActive = async (service: Service) => {
@@ -182,7 +200,7 @@ export default function ManageServices() {
             if (error) throw error;
             fetchServices();
         } catch (error: any) {
-            alert('Error updating service: ' + error.message);
+            showNotification('Error updating service: ' + error.message, 'error');
         }
     };
 
@@ -275,7 +293,7 @@ export default function ManageServices() {
                                         </IconButton>
                                         <IconButton
                                             size="small"
-                                            onClick={() => handleDelete(service.id!)}
+                                            onClick={() => handleDeleteClick(service.id!)}
                                             color="error"
                                         >
                                             <Delete />
@@ -329,7 +347,7 @@ export default function ManageServices() {
                                 <Button startIcon={<Edit />} size="small" onClick={() => handleOpenDialog(service)}>
                                     Edit
                                 </Button>
-                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDelete(service.id!)}>
+                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDeleteClick(service.id!)}>
                                     Delete
                                 </Button>
                             </Box>
@@ -430,6 +448,25 @@ export default function ManageServices() {
                         <Button onClick={handleCloseDialog}>Cancel</Button>
                         <Button onClick={handleSave} variant="contained">
                             {editingService ? 'Update' : 'Create'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Confirmation Dialog */}
+                <Dialog
+                    open={confirmOpen}
+                    onClose={() => setConfirmOpen(false)}
+                >
+                    <DialogTitle>Confirm Action</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            {confirmMessage}
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                        <Button onClick={handleConfirm} variant="contained" color="error" autoFocus>
+                            Confirm
                         </Button>
                     </DialogActions>
                 </Dialog>
