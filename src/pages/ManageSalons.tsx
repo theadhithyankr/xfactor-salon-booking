@@ -199,7 +199,8 @@ export default function ManageSalons() {
                     </Button>
                 </Box>
 
-                <TableContainer component={Paper}>
+                {/* DESKTOP TABLE VIEW */}
+                <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
                     <Table>
                         <TableHead>
                             <TableRow>
@@ -248,6 +249,44 @@ export default function ManageSalons() {
                         </TableBody>
                     </Table>
                 </TableContainer>
+
+                {/* MOBILE CARD VIEW */}
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+                    {salons.map((salon) => (
+                        <Paper key={salon.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box>
+                                    <Typography variant="h6" fontWeight="bold">{salon.name}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{salon.city}, {salon.state}</Typography>
+                                </Box>
+                                <Chip
+                                    label={salon.is_active ? 'Active' : 'Inactive'}
+                                    color={salon.is_active ? 'success' : 'default'}
+                                    size="small"
+                                    onClick={() => handleToggleActive(salon)}
+                                />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+                                <Typography variant="body2">
+                                    <strong>Phone:</strong> {salon.phone}
+                                </Typography>
+                                <Typography variant="body2">
+                                    <strong>Hours:</strong> {salon.opening_time} - {salon.closing_time}
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <Button startIcon={<Edit />} size="small" onClick={() => handleOpenDialog(salon)}>
+                                    Edit
+                                </Button>
+                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDelete(salon.id!)}>
+                                    Delete
+                                </Button>
+                            </Box>
+                        </Paper>
+                    ))}
+                </Box>
 
                 {/* Add/Edit Dialog */}
                 <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>

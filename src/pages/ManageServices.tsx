@@ -189,7 +189,8 @@ export default function ManageServices() {
                     </Button>
                 </Box>
 
-                <TableContainer component={Paper}>
+                {/* DESKTOP TABLE VIEW */}
+                <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
                     <Table>
                         <TableHead>
                             <TableRow>
@@ -240,6 +241,44 @@ export default function ManageServices() {
                         </TableBody>
                     </Table>
                 </TableContainer>
+
+                {/* MOBILE CARD VIEW */}
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+                    {services.map((service) => (
+                        <Paper key={service.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box>
+                                    <Typography variant="h6" fontWeight="bold">{service.name}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{service.category}</Typography>
+                                </Box>
+                                <Chip
+                                    label={service.is_active ? 'Active' : 'Inactive'}
+                                    color={service.is_active ? 'success' : 'default'}
+                                    size="small"
+                                    onClick={() => handleToggleActive(service)}
+                                />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                                <Typography variant="body2">
+                                    <strong>Price:</strong> ₹{service.price.toFixed(2)}
+                                </Typography>
+                                <Typography variant="body2">
+                                    <strong>Duration:</strong> {service.duration_minutes} min
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <Button startIcon={<Edit />} size="small" onClick={() => handleOpenDialog(service)}>
+                                    Edit
+                                </Button>
+                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDelete(service.id!)}>
+                                    Delete
+                                </Button>
+                            </Box>
+                        </Paper>
+                    ))}
+                </Box>
 
                 {/* Add/Edit Dialog */}
                 <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>

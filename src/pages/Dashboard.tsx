@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Typography, Button } from '@mui/material';
 import WorkerDashboard from './WorkerDashboard';
 import AdminDashboard from './AdminDashboard';
 
@@ -9,6 +9,7 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const [role, setRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -26,7 +27,8 @@ export default function Dashboard() {
 
             if (error) {
                 console.error('Error fetching profile:', error);
-                navigate('/login');
+                setError(error.message);
+                setLoading(false);
             } else {
                 setRole(data.role);
                 // Redirect customers to My Bookings
@@ -53,6 +55,32 @@ export default function Dashboard() {
                 alignItems: 'center'
             }}>
                 <CircularProgress color="primary" />
+            </Box>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <Box sx={{
+                height: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 2
+            }}>
+                <Typography variant="h5" color="error">Profile Error</Typography>
+                <Typography>{error}</Typography>
+                <Button
+                    variant="contained"
+                    onClick={async () => {
+                        await supabase.auth.signOut();
+                        navigate('/login');
+                    }}
+                >
+                    Logout & Try Again
+                </Button>
             </Box>
         );
     }

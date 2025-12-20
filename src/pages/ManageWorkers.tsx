@@ -3,11 +3,12 @@ import {
     Container, Typography, Box, Paper, Button, TextField,
     Dialog, DialogTitle, DialogContent, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    IconButton, Chip, Grid, CircularProgress, MenuItem, Avatar,
-    InputAdornment
+    IconButton, Chip, MenuItem, Avatar,
+    Tabs, Tab, Alert, CircularProgress
 } from '@mui/material';
-import { Add, Edit, Delete, Person, Search } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 
 export default function ManageWorkers() {
@@ -18,15 +19,22 @@ export default function ManageWorkers() {
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingWorker, setEditingWorker] = useState<any | null>(null);
+
+    // Form Mode: 'promote' (existing user) or 'create' (new user)
+    const [createMode, setCreateMode] = useState<'promote' | 'create'>('promote');
+
     const [formData, setFormData] = useState({
         profile_id: '',
         salon_id: '',
         specialization: '',
         bio: '',
-        hourly_rate: '',
-        is_available: true
+        is_available: true,
+        // New User Fields
+        email: '',
+        password: '',
+        full_name: '',
+        phone: ''
     });
-    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         checkAdminAccess();
@@ -53,6 +61,7 @@ export default function ManageWorkers() {
     const fetchData = async () => {
         setLoading(true);
         // 1. Fetch Workers
+        // We select *, then profile fields.
         const { data: workersData } = await supabase
             .from('workers')
             .select(`
@@ -64,7 +73,7 @@ export default function ManageWorkers() {
 
         if (workersData) setWorkers(workersData);
 
-        // 2. Fetch Salons (for dropdown)
+        // 2. Fetch Salons
         const { data: salonsData } = await supabase
             .from('salons')
             .select('id, name')
@@ -73,9 +82,7 @@ export default function ManageWorkers() {
 
         if (salonsData) setSalons(salonsData);
 
-        // 3. Fetch Customers (Profiles who are NOT workers or admins)
-        // Note: For large apps, this should be a search, not fetch all. 
-        // But for MVP, fetch all customers is fine.
+        // 3. Fetch Customers for promotion
         const { data: customersData } = await supabase
             .from('profiles')
             .select('*')
@@ -90,23 +97,25 @@ export default function ManageWorkers() {
     const handleOpenDialog = (worker?: any) => {
         if (worker) {
             setEditingWorker(worker);
+            setCreateMode('promote');
             setFormData({
-                profile_id: worker.profile_id, // Read-only in edit
+                profile_id: worker.profile_id,
                 salon_id: worker.salon_id || '',
                 specialization: worker.specialization || '',
                 bio: worker.bio || '',
-                hourly_rate: '', // Not in schema, maybe use 'rating' field as proxy? No, stick to specialization.
-                is_available: worker.is_available
+                is_available: worker.is_available,
+                email: '', password: '', full_name: '', phone: ''
             });
         } else {
             setEditingWorker(null);
+            setCreateMode('create');
             setFormData({
                 profile_id: '',
                 salon_id: '',
                 specialization: '',
                 bio: '',
-                hourly_rate: '',
-                is_available: true
+                is_available: true,
+                email: '', password: '', full_name: '', phone: ''
             });
         }
         setDialogOpen(true);
@@ -117,10 +126,47 @@ export default function ManageWorkers() {
         setEditingWorker(null);
     };
 
+    // Helper to Create New Auth User without logging out Admin
+    const createNewUser = async () => {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        // Create a temporary client with in-memory storage to avoid overwriting Admin session
+        const tempClient = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false,
+                storage: {
+                    getItem: () => null,
+                    setItem: () => { },
+                    removeItem: () => { }
+                }
+            }
+        });
+
+        const { data, error } = await tempClient.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+                data: {
+                    full_name: formData.full_name,
+                    phone: formData.phone,
+                    role: 'worker'
+                }
+            }
+        });
+
+        if (error) throw error;
+        if (!data.user) throw new Error('User creation failed (no user returned)');
+
+        return data.user.id;
+    };
+
     const handleSave = async () => {
         try {
             if (editingWorker) {
-                // UPDATE
+                // UPDATE EXISTING WORKER
                 const { error } = await supabase
                     .from('workers')
                     .update({
@@ -132,51 +178,70 @@ export default function ManageWorkers() {
                     .eq('id', editingWorker.id);
 
                 if (error) throw error;
+
             } else {
-                // CREATE (Promote)
-                if (!formData.profile_id) return alert('Please select a user');
+                // CREATE NEW WORKER
+                let targetProfileId = formData.profile_id;
+
+                if (createMode === 'create') {
+                    // 1. Create User Logic
+                    if (!formData.email || !formData.password || !formData.full_name) {
+                        return alert("Email, Password, and Name are required.");
+                    }
+                    targetProfileId = await createNewUser();
+
+                    // Allow trigger to propagation or Upsert profile manually to ensure data is there
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .upsert({
+                            id: targetProfileId,
+                            full_name: formData.full_name,
+                            phone: formData.phone, // Ensure phone is saved
+                            role: 'worker',
+                            updated_at: new Date().toISOString()
+                        });
+
+                    if (profileError) {
+                        console.error("Profile Upsert Error", profileError);
+                        alert("Worker account created, but Profile update failed (likely permission issue). The worker will appear as 'Unknown'. Please run the 'fix_permissions.sql' script in Supabase.");
+                    }
+                } else {
+                    // Promote Existing
+                    if (!targetProfileId) return alert("Please select a user.");
+                    // Update Role
+                    await supabase.from('profiles').update({ role: 'worker' }).eq('id', targetProfileId);
+                }
+
                 if (!formData.salon_id) return alert('Please select a salon');
 
-                // 1. Create Worker Record
+                // 2. Insert Worker Record
                 const { error: workerError } = await supabase
                     .from('workers')
                     .insert([{
-                        profile_id: formData.profile_id,
+                        profile_id: targetProfileId,
                         salon_id: formData.salon_id,
                         specialization: formData.specialization,
                         bio: formData.bio,
                         is_available: true,
-                        rating: 5.0, // Default start rating
+                        rating: 5.0,
                         total_reviews: 0
                     }]);
 
                 if (workerError) throw workerError;
-
-                // 2. Update Profile Role
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .update({ role: 'worker' })
-                    .eq('id', formData.profile_id);
-
-                if (profileError) {
-                    // Start rollback? Ideally transaction, but Supabase client JS doesn't support easy transactions.
-                    console.error("Role update failed", profileError);
-                    alert("Worker created but role update failed. Please check database.");
-                }
             }
 
             fetchData();
             handleCloseDialog();
         } catch (error: any) {
-            alert('Error saving worker: ' + error.message);
+            console.error(error);
+            alert('Error: ' + (error.message || "Unknown error"));
         }
     };
 
     const handleDelete = async (worker: any) => {
-        if (!confirm(`Are you sure you want to remove ${worker.profile?.full_name} from workers? This will downgrade them to 'customer'.`)) return;
+        if (!confirm(`Are you sure you want to remove ${worker.profile?.full_name || 'this worker'}? This will downgrade them to 'customer'.`)) return;
 
         try {
-            // 1. Delete Worker Record
             const { error: deleteError } = await supabase
                 .from('workers')
                 .delete()
@@ -184,25 +249,18 @@ export default function ManageWorkers() {
 
             if (deleteError) throw deleteError;
 
-            // 2. Downgrade Profile Role
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({ role: 'customer' })
-                .eq('id', worker.profile_id);
-
-            if (profileError) throw profileError;
+            if (worker.profile_id) {
+                await supabase
+                    .from('profiles')
+                    .update({ role: 'customer' })
+                    .eq('id', worker.profile_id);
+            }
 
             fetchData();
         } catch (error: any) {
             alert('Error deleting worker: ' + error.message);
         }
     };
-
-    // Filter customers for dropdown (exclude ones that are already workers if any slippage)
-    const filteredCustomers = customers.filter(c =>
-        c.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     if (loading) {
         return (
@@ -232,7 +290,8 @@ export default function ManageWorkers() {
                     </Button>
                 </Box>
 
-                <TableContainer component={Paper}>
+                {/* DESKTOP TABLE VIEW */}
+                <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' } }}>
                     <Table>
                         <TableHead>
                             <TableRow>
@@ -252,7 +311,7 @@ export default function ManageWorkers() {
                                             <Avatar src={worker.profile?.avatar_url} />
                                             <Box>
                                                 <Typography variant="subtitle1" fontWeight="bold">
-                                                    {worker.profile?.full_name}
+                                                    {worker.profile?.full_name || 'Unknown'}
                                                 </Typography>
                                                 <Typography variant="caption" color="text.secondary">
                                                     {worker.profile?.phone || 'No phone'}
@@ -284,13 +343,72 @@ export default function ManageWorkers() {
                     </Table>
                 </TableContainer>
 
+                {/* MOBILE CARD VIEW */}
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+                    {workers.map((worker) => (
+                        <Paper key={worker.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Avatar src={worker.profile?.avatar_url} />
+                                    <Box>
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {worker.profile?.full_name || 'Unknown'}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {worker.salon?.name || 'Unassigned'}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                                <Chip
+                                    label={worker.is_available ? 'Using' : 'Off'}
+                                    color={worker.is_available ? 'success' : 'default'}
+                                    size="small"
+                                />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1, px: 1 }}>
+                                <Typography variant="body2">
+                                    <strong>Role:</strong> {worker.specialization || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2">
+                                    <strong>Phone:</strong> {worker.profile?.phone || 'N/A'}
+                                </Typography>
+                                <Typography variant="body2">
+                                    <strong>Rating:</strong> {worker.rating?.toFixed(1)} ({worker.total_reviews} reviews)
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                <Button startIcon={<Edit />} size="small" onClick={() => handleOpenDialog(worker)}>
+                                    Edit
+                                </Button>
+                                <Button startIcon={<Delete />} size="small" color="error" onClick={() => handleDelete(worker)}>
+                                    Delete
+                                </Button>
+                            </Box>
+                        </Paper>
+                    ))}
+                </Box>
+
                 <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                     <DialogTitle>{editingWorker ? 'Edit Worker' : 'Add New Worker'}</DialogTitle>
                     <DialogContent>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
 
-                            {/* USER SELECTION (Only for Create) */}
                             {!editingWorker && (
+                                <Tabs
+                                    value={createMode}
+                                    onChange={(_, val) => setCreateMode(val)}
+                                    variant="fullWidth"
+                                    sx={{ mb: 2 }}
+                                >
+                                    <Tab label="New Account" value="create" />
+                                    <Tab label="Promote User" value="promote" />
+                                </Tabs>
+                            )}
+
+                            {/* USER SELECTION (Promote) */}
+                            {!editingWorker && createMode === 'promote' && (
                                 <Box>
                                     <Typography variant="subtitle2" gutterBottom>Select User to Promote</Typography>
                                     <TextField
@@ -311,13 +429,53 @@ export default function ManageWorkers() {
                                 </Box>
                             )}
 
-                            {/* SALON SELECTION */}
+                            {/* NEW USER FIELDS (Create) */}
+                            {!editingWorker && createMode === 'create' && (
+                                <>
+                                    <Alert severity="info" sx={{ mb: 1 }}>
+                                        Creates a new database user. You can set the password here.
+                                    </Alert>
+                                    <TextField
+                                        fullWidth
+                                        label="Email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        required
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        label="Password"
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        required
+                                        helperText="Min 6 characters"
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        label="Full Name"
+                                        value={formData.full_name}
+                                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                        required
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        label="Phone"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    />
+                                </>
+                            )}
+
+                            {/* WORKER DETAILS (Common) */}
                             <TextField
                                 select
                                 fullWidth
                                 label="Assign Salon"
                                 value={formData.salon_id}
                                 onChange={(e) => setFormData({ ...formData, salon_id: e.target.value })}
+                                sx={{ mt: 1 }}
                             >
                                 {salons.map((s) => (
                                     <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
@@ -359,7 +517,7 @@ export default function ManageWorkers() {
                     <DialogActions>
                         <Button onClick={handleCloseDialog}>Cancel</Button>
                         <Button onClick={handleSave} variant="contained">
-                            {editingWorker ? 'Update' : 'Promote & Save'}
+                            {editingWorker ? 'Update' : (createMode === 'create' ? 'Create User & Worker' : 'Promote & Save')}
                         </Button>
                     </DialogActions>
                 </Dialog>
