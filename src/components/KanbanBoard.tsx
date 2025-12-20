@@ -17,11 +17,11 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS = {
-    pending: { title: 'Pending (FCFS)', color: '#ff9800' },
-    confirmed: { title: 'Confirmed', color: '#2196f3' },
-    in_progress: { title: 'In Progress', color: '#9c27b0' },
-    completed: { title: 'Completed', color: '#4caf50' },
-    cancelled: { title: 'Cancelled', color: '#f44336' },
+    pending: { title: 'Pending (FCFS)', color: '#E60000' },
+    confirmed: { title: 'Confirmed', color: '#E60000' },
+    in_progress: { title: 'In Progress', color: '#E60000' },
+    completed: { title: 'Completed', color: '#E60000' },
+    cancelled: { title: 'Cancelled', color: '#E60000' },
 };
 
 export default function KanbanBoard({ appointments, onStatusChange, onReschedule, currentWorkerId }: KanbanBoardProps) {
@@ -43,9 +43,23 @@ export default function KanbanBoard({ appointments, onStatusChange, onReschedule
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 2, minHeight: '500px' }}>
+            <Box sx={{
+                display: 'flex',
+                gap: 2,
+                pb: 2,
+                minHeight: '500px',
+                flexWrap: 'wrap', // Allow wrapping
+                justifyContent: 'center', // Center when wrapped
+                alignItems: 'flex-start'
+            }}>
                 {Object.entries(COLUMNS).map(([status, config]) => (
-                    <Box key={status} sx={{ minWidth: 300, display: 'flex', flexDirection: 'column' }}>
+                    <Box key={status} sx={{
+                        width: '100%',
+                        maxWidth: 320, // Limit width of each column
+                        minWidth: 280,
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
                         <Paper
                             sx={{
                                 p: 2,
@@ -117,8 +131,76 @@ export default function KanbanBoard({ appointments, onStatusChange, onReschedule
                                                             {apt.start_time.slice(0, 5)} - {apt.end_time.slice(0, 5)}
                                                         </Typography>
 
-                                                        {onReschedule && ['pending', 'confirmed'].includes(status) && (
-                                                            <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                                        <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                            {/* PENDING ACTIONS */}
+                                                            {status === 'pending' && (
+                                                                <>
+                                                                    <Button
+                                                                        fullWidth
+                                                                        variant="contained"
+                                                                        size="small"
+                                                                        color="primary"
+                                                                        onClick={() => onStatusChange(apt.id, 'confirmed')}
+                                                                    >
+                                                                        Accept
+                                                                    </Button>
+                                                                    <Button
+                                                                        fullWidth
+                                                                        variant="outlined"
+                                                                        size="small"
+                                                                        color="error"
+                                                                        onClick={() => {
+                                                                            if (confirm('Are you sure you want to cancel this appointment?'))
+                                                                                onStatusChange(apt.id, 'cancelled');
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                </>
+                                                            )}
+
+                                                            {/* CONFIRMED ACTIONS */}
+                                                            {status === 'confirmed' && (
+                                                                <>
+                                                                    <Button
+                                                                        fullWidth
+                                                                        variant="contained"
+                                                                        size="small"
+                                                                        color="secondary"
+                                                                        onClick={() => onStatusChange(apt.id, 'in_progress')}
+                                                                    >
+                                                                        Start Job
+                                                                    </Button>
+                                                                    <Button
+                                                                        fullWidth
+                                                                        variant="outlined"
+                                                                        size="small"
+                                                                        color="error"
+                                                                        onClick={() => {
+                                                                            if (confirm('Cancel this confirmed appointment?'))
+                                                                                onStatusChange(apt.id, 'cancelled');
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                </>
+                                                            )}
+
+                                                            {/* IN PROGRESS ACTIONS */}
+                                                            {status === 'in_progress' && (
+                                                                <Button
+                                                                    fullWidth
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    color="success"
+                                                                    onClick={() => onStatusChange(apt.id, 'completed')}
+                                                                >
+                                                                    Complete Job
+                                                                </Button>
+                                                            )}
+
+                                                            {/* RESCHEDULE (Shared) */}
+                                                            {onReschedule && ['pending', 'confirmed'].includes(status) && (
                                                                 <Button
                                                                     fullWidth
                                                                     variant="outlined"
@@ -127,8 +209,8 @@ export default function KanbanBoard({ appointments, onStatusChange, onReschedule
                                                                 >
                                                                     Reschedule
                                                                 </Button>
-                                                            </Box>
-                                                        )}
+                                                            )}
+                                                        </Box>
                                                     </CardContent>
                                                 </Card>
                                             )}

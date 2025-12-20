@@ -1,9 +1,11 @@
-import { Box, Typography, Button, Container, Stack } from '@mui/material';
+import { Box, Typography, Button, Container, Stack, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 export default function Hero() {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     return (
         <Box
@@ -14,6 +16,7 @@ export default function Hero() {
                 display: 'flex',
                 alignItems: 'center',
                 overflow: 'hidden',
+                // Image Background - Only in Dark Mode
                 '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -21,12 +24,14 @@ export default function Hero() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundImage: 'url(https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=2036&auto=format&fit=crop)', // High quality dark salon interior
+                    backgroundImage: 'url(https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=2036&auto=format&fit=crop)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    filter: 'brightness(0.3) saturate(1.2)', // Darken and saturate
+                    filter: 'brightness(0.3) saturate(1.2)',
                     zIndex: -1,
+                    display: isDark ? 'block' : 'none',
                 },
+                // Gradient Overlay - Only in Dark Mode
                 '&::after': {
                     content: '""',
                     position: 'absolute',
@@ -36,6 +41,7 @@ export default function Hero() {
                     height: '200px',
                     background: 'linear-gradient(to top, #0F0F12, transparent)',
                     zIndex: -1,
+                    display: isDark ? 'block' : 'none',
                 }
             }}
         >
@@ -48,16 +54,18 @@ export default function Hero() {
                     >
                         <Typography
                             variant="h1"
-                            color="white"
+                            color={isDark ? "white" : "text.primary"}
                             sx={{
                                 fontWeight: 800,
-                                textShadow: '0 0 40px rgba(0,0,0,0.5)',
+                                textShadow: isDark ? '0 0 40px rgba(0,0,0,0.5)' : 'none',
                                 mb: 2
                             }}
                         >
                             Redefine Your <br />
                             <Box component="span" sx={{
-                                background: 'linear-gradient(45deg, #FF0000 30%, #FFFFFF 90%)',
+                                background: isDark
+                                    ? 'linear-gradient(45deg, #FF0000 30%, #FFFFFF 90%)'
+                                    : 'linear-gradient(45deg, #E60000 30%, #000000 90%)',
                                 backgroundClip: 'text',
                                 textFillColor: 'transparent',
                                 WebkitBackgroundClip: 'text',
@@ -99,16 +107,16 @@ export default function Hero() {
                             <Button
                                 variant="outlined"
                                 size="large"
-                                color="inherit" // White outline
+                                color={isDark ? "inherit" : "primary"}
                                 onClick={() => navigate('/salons')}
                                 sx={{
                                     fontSize: '1.2rem',
                                     px: 4, py: 1.5,
-                                    borderColor: 'rgba(255,255,255,0.3)',
-                                    color: 'white',
+                                    borderColor: isDark ? 'rgba(255,255,255,0.3)' : 'primary.main',
+                                    color: isDark ? 'white' : 'primary.main',
                                     '&:hover': {
-                                        borderColor: 'white',
-                                        backgroundColor: 'rgba(255,255,255,0.1)'
+                                        borderColor: isDark ? 'white' : 'primary.dark',
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255, 0, 0, 0.04)'
                                     }
                                 }}
                             >

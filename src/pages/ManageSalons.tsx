@@ -24,7 +24,7 @@ type Salon = {
     description: string;
     opening_time: string;
     closing_time: string;
-    is_active: boolean;
+    image_url?: string;
 };
 
 export default function ManageSalons() {
@@ -33,6 +33,7 @@ export default function ManageSalons() {
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSalon, setEditingSalon] = useState<Salon | null>(null);
+    const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState<Salon>({
         name: '',
         address: '',
@@ -43,7 +44,8 @@ export default function ManageSalons() {
         description: '',
         opening_time: '09:00',
         closing_time: '21:00',
-        is_active: true
+        is_active: true,
+        image_url: ''
     });
 
     useEffect(() => {
@@ -97,7 +99,8 @@ export default function ManageSalons() {
                 description: '',
                 opening_time: '09:00',
                 closing_time: '21:00',
-                is_active: true
+                is_active: true,
+                image_url: ''
             });
         }
         setDialogOpen(true);
@@ -106,6 +109,38 @@ export default function ManageSalons() {
     const handleCloseDialog = () => {
         setDialogOpen(false);
         setEditingSalon(null);
+    };
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            setUploading(true);
+            if (!event.target.files || event.target.files.length === 0) {
+                throw new Error('You must select an image to upload.');
+            }
+
+            const file = event.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('salon_images')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage
+                .from('salon_images')
+                .getPublicUrl(filePath);
+
+            setFormData({ ...formData, image_url: data.publicUrl });
+        } catch (error: any) {
+            alert('Error uploading image: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleSave = async () => {
@@ -204,6 +239,7 @@ export default function ManageSalons() {
                     <Table>
                         <TableHead>
                             <TableRow>
+                                <TableCell><strong>Image</strong></TableCell>
                                 <TableCell><strong>Name</strong></TableCell>
                                 <TableCell><strong>Location</strong></TableCell>
                                 <TableCell><strong>Phone</strong></TableCell>
@@ -215,6 +251,16 @@ export default function ManageSalons() {
                         <TableBody>
                             {salons.map((salon) => (
                                 <TableRow key={salon.id}>
+                                    <TableCell>
+                                        {salon.image_url && (
+                                            <Box
+                                                component="img"
+                                                src={salon.image_url}
+                                                alt={salon.name}
+                                                sx={{ width: 50, height: 50, borderRadius: 1, objectFit: 'cover' }}
+                                            />
+                                        )}
+                                    </TableCell>
                                     <TableCell>{salon.name}</TableCell>
                                     <TableCell>{salon.city}, {salon.state}</TableCell>
                                     <TableCell>{salon.phone}</TableCell>
@@ -254,17 +300,29 @@ export default function ManageSalons() {
                 <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
                     {salons.map((salon) => (
                         <Paper key={salon.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <Box>
-                                    <Typography variant="h6" fontWeight="bold">{salon.name}</Typography>
-                                    <Typography variant="body2" color="text.secondary">{salon.city}, {salon.state}</Typography>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                                {salon.image_url && (
+                                    <Box
+                                        component="img"
+                                        src={salon.image_url}
+                                        alt={salon.name}
+                                        sx={{ width: 60, height: 60, borderRadius: 1, objectFit: 'cover' }}
+                                    />
+                                )}
+                                <Box sx={{ flex: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <Box>
+                                            <Typography variant="h6" fontWeight="bold">{salon.name}</Typography>
+                                            <Typography variant="body2" color="text.secondary">{salon.city}, {salon.state}</Typography>
+                                        </Box>
+                                        <Chip
+                                            label={salon.is_active ? 'Active' : 'Inactive'}
+                                            color={salon.is_active ? 'success' : 'default'}
+                                            size="small"
+                                            onClick={() => handleToggleActive(salon)}
+                                        />
+                                    </Box>
                                 </Box>
-                                <Chip
-                                    label={salon.is_active ? 'Active' : 'Inactive'}
-                                    color={salon.is_active ? 'success' : 'default'}
-                                    size="small"
-                                    onClick={() => handleToggleActive(salon)}
-                                />
                             </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
@@ -295,6 +353,33 @@ export default function ManageSalons() {
                     </DialogTitle>
                     <DialogContent>
                         <Grid container spacing={2} sx={{ mt: 1 }}>
+                            {/* Image Upload */}
+                            <Grid size={{ xs: 12 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                    {formData.image_url && (
+                                        <Box
+                                            component="img"
+                                            src={formData.image_url}
+                                            alt="Preview"
+                                            sx={{ width: 100, height: 100, borderRadius: 2, objectFit: 'cover', border: '1px solid #333' }}
+                                        />
+                                    )}
+                                    <Button
+                                        variant="outlined"
+                                        component="label"
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? 'Uploading...' : 'Upload Image'}
+                                        <input
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                        />
+                                    </Button>
+                                </Box>
+                            </Grid>
+
                             <Grid size={{ xs: 12 }}>
                                 <TextField
                                     fullWidth
@@ -384,7 +469,7 @@ export default function ManageSalons() {
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleCloseDialog}>Cancel</Button>
-                        <Button onClick={handleSave} variant="contained">
+                        <Button onClick={handleSave} variant="contained" disabled={uploading}>
                             {editingSalon ? 'Update' : 'Create'}
                         </Button>
                     </DialogActions>

@@ -3,10 +3,11 @@ import {
     AppBar, Toolbar, Typography, Button, Box, Container, Avatar, IconButton,
     Drawer, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Divider
 } from '@mui/material';
-import { Menu as MenuIcon, Home, Store, Info, CalendarMonth, Dashboard as DashboardIcon, Login, Logout, Spa, People, Business } from '@mui/icons-material';
+import { Brightness4, Brightness7, Menu as MenuIcon, Home, Store, Info, CalendarMonth, Dashboard as DashboardIcon, Login, Logout, Spa, People, Business } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useThemeContext } from '../context/ThemeContext';
 
 export default function Navbar() {
     const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function Navbar() {
     const [user, setUser] = useState<any>(null);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const { mode, toggleColorMode } = useThemeContext();
 
     useEffect(() => {
         // Check current session
@@ -96,6 +98,14 @@ export default function Navbar() {
             </List>
             <Divider />
             <List>
+                <ListItem disablePadding>
+                    <ListItemButton onClick={toggleColorMode}>
+                        <ListItemIcon>
+                            {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                        </ListItemIcon>
+                        <ListItemText primary={mode === 'dark' ? "Light Mode" : "Dark Mode"} />
+                    </ListItemButton>
+                </ListItem>
                 {user ? (
                     <ListItem disablePadding>
                         <ListItemButton onClick={handleLogout}>
@@ -124,7 +134,7 @@ export default function Navbar() {
 
     return (
         <>
-            <AppBar position="fixed" color="inherit" elevation={0} sx={{ top: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(18, 18, 18, 0.95)', backdropFilter: 'blur(10px)' }}>
+            <AppBar position="fixed" color="inherit" elevation={0} sx={{ top: 0 }}>
                 <Container maxWidth="xl">
                     <Toolbar disableGutters sx={{ height: 80, display: 'flex', justifyContent: 'flex-start' }}>
 
@@ -134,7 +144,23 @@ export default function Navbar() {
                             aria-label="open drawer"
                             edge="start"
                             onClick={handleDrawerToggle}
-                            sx={{ mr: 2, display: { md: 'none' } }}
+                            disableRipple
+                            sx={{
+                                mr: 2,
+                                display: { md: 'none' },
+                                backgroundColor: 'transparent !important',
+                                border: 'none !important',
+                                outline: 'none !important',
+                                boxShadow: 'none !important',
+                                borderRadius: 0,
+                                '&:hover': {
+                                    backgroundColor: 'transparent !important',
+                                    border: 'none !important'
+                                },
+                                '&:active': {
+                                    backgroundColor: 'transparent !important'
+                                }
+                            }}
                         >
                             <MenuIcon />
                         </IconButton>
@@ -149,10 +175,11 @@ export default function Navbar() {
                             transition={{ duration: 0.5 }}
                             sx={{
                                 fontWeight: 800,
-                                background: 'linear-gradient(45deg, #FF0000 30%, #FFFFFF 90%)',
+                                background: mode === 'dark'
+                                    ? 'linear-gradient(45deg, #FF0000 30%, #FFFFFF 90%)'
+                                    : 'linear-gradient(45deg, #E60000 30%, #000000 90%)',
                                 backgroundClip: 'text',
                                 textFillColor: 'transparent',
-                                WebkitBackgroundClip: 'text',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 cursor: 'pointer',
@@ -187,6 +214,9 @@ export default function Navbar() {
 
                             {user ? (
                                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', ml: 2 }}>
+                                    <IconButton onClick={toggleColorMode} color="inherit">
+                                        {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                                    </IconButton>
                                     <IconButton onClick={() => navigate(userRole === 'customer' ? '/my-bookings' : '/dashboard')}>
                                         <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
                                             {user.email?.charAt(0).toUpperCase()}
@@ -210,6 +240,9 @@ export default function Navbar() {
                                     >
                                         Login
                                     </Button>
+                                    <IconButton sx={{ ml: 1 }} onClick={toggleColorMode} color="inherit">
+                                        {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                                    </IconButton>
                                     <Button
                                         variant="contained"
                                         onClick={() => navigate('/book')}

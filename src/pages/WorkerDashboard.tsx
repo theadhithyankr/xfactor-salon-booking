@@ -67,7 +67,16 @@ export default function WorkerDashboard() {
                     .order('appointment_date', { ascending: true });
 
                 if (error) console.error('Error fetching appointments:', error);
-                setAppointments(appointmentsData || []);
+
+                // Filter: Show ALL active tasks, but only TODAY'S completed/cancelled tasks (Daily Reset)
+                const today = dayjs().format('YYYY-MM-DD');
+                const filtered = (appointmentsData || []).filter(apt => {
+                    const isActive = ['pending', 'confirmed', 'in_progress'].includes(apt.status);
+                    const isToday = apt.appointment_date === today;
+                    return isActive || isToday;
+                });
+
+                setAppointments(filtered);
             }
 
             setLoading(false);
@@ -192,6 +201,11 @@ export default function WorkerDashboard() {
                     <Typography variant="h5" color="primary.main">
                         {profile?.full_name || 'Worker'}
                     </Typography>
+                    {salon && (
+                        <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {salon.name}
+                        </Typography>
+                    )}
                 </Paper>
 
                 <Grid container spacing={3} sx={{ mb: 4 }}>

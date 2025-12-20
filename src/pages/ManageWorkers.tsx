@@ -429,29 +429,33 @@ export default function ManageWorkers() {
                                 </Box>
                             )}
 
-                            {/* NEW USER FIELDS (Create) */}
-                            {!editingWorker && createMode === 'create' && (
+                            {/* NEW USER FIELDS (Create) or EDIT FIELDS (Edit) */}
+                            {((!editingWorker && createMode === 'create') || editingWorker) && (
                                 <>
-                                    <Alert severity="info" sx={{ mb: 1 }}>
-                                        Creates a new database user. You can set the password here.
-                                    </Alert>
-                                    <TextField
-                                        fullWidth
-                                        label="Email"
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        required
-                                    />
-                                    <TextField
-                                        fullWidth
-                                        label="Password"
-                                        type="password"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        required
-                                        helperText="Min 6 characters"
-                                    />
+                                    {!editingWorker && (
+                                        <>
+                                            <Alert severity="info" sx={{ mb: 1 }}>
+                                                Creates a new database user. You can set the password here.
+                                            </Alert>
+                                            <TextField
+                                                fullWidth
+                                                label="Email"
+                                                type="email"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                required
+                                            />
+                                            <TextField
+                                                fullWidth
+                                                label="Password"
+                                                type="password"
+                                                value={formData.password}
+                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                required
+                                                helperText="Min 6 characters"
+                                            />
+                                        </>
+                                    )}
                                     <TextField
                                         fullWidth
                                         label="Full Name"

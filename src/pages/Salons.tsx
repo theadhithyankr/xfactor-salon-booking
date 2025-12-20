@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Typography, Box, Paper, Grid, Card, CardContent, CircularProgress } from '@mui/material';
+import { Container, Typography, Box, Paper, Grid, Card, CardContent, CardMedia, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
 import { LocationOn, Phone, AccessTime } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
@@ -91,16 +91,24 @@ export default function Salons() {
                                         initial={{ opacity: 0, y: 30 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1 }}
+                                        style={{ height: '100%' }}
                                     >
                                         <Card sx={{
                                             height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
                                             '&:hover': {
                                                 transform: 'translateY(-4px)',
                                                 boxShadow: '0 8px 24px rgba(255, 0, 0, 0.15)',
                                             },
                                             transition: 'all 0.3s ease'
                                         }}>
-                                            <CardContent sx={{ p: 4 }}>
+                                            <CardMedia
+                                                sx={{ height: 200 }}
+                                                image={salon.image_url || 'https://images.unsplash.com/photo-1521590832896-bc78b4bdc03c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
+                                                title={salon.name}
+                                            />
+                                            <CardContent sx={{ p: 4, flexGrow: 1 }}>
                                                 <Typography variant="h4" gutterBottom fontWeight="bold">
                                                     {salon.name}
                                                 </Typography>

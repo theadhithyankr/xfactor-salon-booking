@@ -7,7 +7,7 @@ import { Database } from '../types/database.types';
 
 type Service = Database['public']['Tables']['services']['Row'];
 
-const MotionCard = motion(Card);
+const MotionCard = motion.create(Card);
 
 export default function ServicesSection() {
     const navigate = useNavigate();

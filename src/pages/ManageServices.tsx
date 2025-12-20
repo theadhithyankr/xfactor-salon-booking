@@ -17,7 +17,7 @@ type Service = {
     price: number;
     duration_minutes: number;
     category: 'haircut' | 'styling' | 'coloring' | 'treatment' | 'other';
-    image_url: string;
+    image_url?: string;
     is_active: boolean;
 };
 
@@ -27,6 +27,7 @@ export default function ManageServices() {
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
+    const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState<Service>({
         name: '',
         description: '',
@@ -94,6 +95,39 @@ export default function ManageServices() {
     const handleCloseDialog = () => {
         setDialogOpen(false);
         setEditingService(null);
+    };
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            setUploading(true);
+            if (!event.target.files || event.target.files.length === 0) {
+                throw new Error('You must select an image to upload.');
+            }
+
+            const file = event.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `service_${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // Reusing salon_images bucket as discussed
+            const { error: uploadError } = await supabase.storage
+                .from('salon_images')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage
+                .from('salon_images')
+                .getPublicUrl(filePath);
+
+            setFormData({ ...formData, image_url: data.publicUrl });
+        } catch (error: any) {
+            alert('Error uploading image: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleSave = async () => {
@@ -194,6 +228,7 @@ export default function ManageServices() {
                     <Table>
                         <TableHead>
                             <TableRow>
+                                <TableCell><strong>Image</strong></TableCell>
                                 <TableCell><strong>Name</strong></TableCell>
                                 <TableCell><strong>Category</strong></TableCell>
                                 <TableCell><strong>Price</strong></TableCell>
@@ -205,6 +240,16 @@ export default function ManageServices() {
                         <TableBody>
                             {services.map((service) => (
                                 <TableRow key={service.id}>
+                                    <TableCell>
+                                        {service.image_url && (
+                                            <Box
+                                                component="img"
+                                                src={service.image_url}
+                                                alt={service.name}
+                                                sx={{ width: 50, height: 50, borderRadius: 1, objectFit: 'cover' }}
+                                            />
+                                        )}
+                                    </TableCell>
                                     <TableCell>{service.name}</TableCell>
                                     <TableCell>
                                         <Chip label={service.category} size="small" />
@@ -246,17 +291,29 @@ export default function ManageServices() {
                 <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
                     {services.map((service) => (
                         <Paper key={service.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <Box>
-                                    <Typography variant="h6" fontWeight="bold">{service.name}</Typography>
-                                    <Typography variant="body2" color="text.secondary">{service.category}</Typography>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                                {service.image_url && (
+                                    <Box
+                                        component="img"
+                                        src={service.image_url}
+                                        alt={service.name}
+                                        sx={{ width: 60, height: 60, borderRadius: 1, objectFit: 'cover' }}
+                                    />
+                                )}
+                                <Box sx={{ flex: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <Box>
+                                            <Typography variant="h6" fontWeight="bold">{service.name}</Typography>
+                                            <Typography variant="body2" color="text.secondary">{service.category}</Typography>
+                                        </Box>
+                                        <Chip
+                                            label={service.is_active ? 'Active' : 'Inactive'}
+                                            color={service.is_active ? 'success' : 'default'}
+                                            size="small"
+                                            onClick={() => handleToggleActive(service)}
+                                        />
+                                    </Box>
                                 </Box>
-                                <Chip
-                                    label={service.is_active ? 'Active' : 'Inactive'}
-                                    color={service.is_active ? 'success' : 'default'}
-                                    size="small"
-                                    onClick={() => handleToggleActive(service)}
-                                />
                             </Box>
 
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
@@ -287,7 +344,34 @@ export default function ManageServices() {
                     </DialogTitle>
                     <DialogContent>
                         <Grid container spacing={2} sx={{ mt: 1 }}>
-                            <Grid size={{ xs: 12 }}>
+                            {/* Image Upload */}
+                            <Grid item xs={12}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                    {formData.image_url && (
+                                        <Box
+                                            component="img"
+                                            src={formData.image_url}
+                                            alt="Preview"
+                                            sx={{ width: 100, height: 100, borderRadius: 2, objectFit: 'cover', border: '1px solid #333' }}
+                                        />
+                                    )}
+                                    <Button
+                                        variant="outlined"
+                                        component="label"
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? 'Uploading...' : 'Upload Image'}
+                                        <input
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                        />
+                                    </Button>
+                                </Box>
+                            </Grid>
+
+                            <Grid item xs={12}>
                                 <TextField
                                     fullWidth
                                     label="Service Name"
@@ -295,7 +379,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </Grid>
-                            <Grid size={{ xs: 12 }}>
+                            <Grid item xs={12}>
                                 <TextField
                                     fullWidth
                                     label="Description"
@@ -305,7 +389,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
+                            <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
                                     label="Price (₹)"
@@ -314,7 +398,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                                 />
                             </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
+                            <Grid item xs={12} sm={6}>
                                 <TextField
                                     fullWidth
                                     label="Duration (minutes)"
@@ -323,7 +407,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
                                 />
                             </Grid>
-                            <Grid size={{ xs: 12, sm: 6 }}>
+                            <Grid item xs={12} sm={6}>
                                 <FormControl fullWidth>
                                     <InputLabel>Category</InputLabel>
                                     <Select
@@ -339,15 +423,7 @@ export default function ManageServices() {
                                     </Select>
                                 </FormControl>
                             </Grid>
-                            <Grid size={{ xs: 12 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Image URL"
-                                    value={formData.image_url}
-                                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                                    placeholder="https://images.unsplash.com/..."
-                                />
-                            </Grid>
+                            {/* The original image_url TextField is removed as per instructions */}
                         </Grid>
                     </DialogContent>
                     <DialogActions>
