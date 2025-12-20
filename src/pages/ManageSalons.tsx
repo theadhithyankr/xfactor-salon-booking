@@ -3,7 +3,7 @@ import {
     Container, Typography, Box, Paper, Button, TextField,
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    IconButton, Chip, Grid, CircularProgress
+    IconButton, Chip, Grid, CircularProgress, Select, MenuItem, FormControl, InputLabel
 } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -25,6 +25,7 @@ type Salon = {
     description: string;
     opening_time: string;
     closing_time: string;
+    target_gender?: 'male' | 'female' | 'unisex';
     image_url?: string;
     is_active?: boolean;
 };
@@ -47,6 +48,7 @@ export default function ManageSalons() {
         description: '',
         opening_time: '09:00',
         closing_time: '21:00',
+        target_gender: 'unisex',
         is_active: true,
         image_url: ''
     });
@@ -107,6 +109,7 @@ export default function ManageSalons() {
                 description: '',
                 opening_time: '09:00',
                 closing_time: '21:00',
+                target_gender: 'unisex',
                 is_active: true,
                 image_url: ''
             });
@@ -263,6 +266,7 @@ export default function ManageSalons() {
                                 <TableCell><strong>Location</strong></TableCell>
                                 <TableCell><strong>Phone</strong></TableCell>
                                 <TableCell><strong>Hours</strong></TableCell>
+                                <TableCell><strong>Gender</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
                                 <TableCell align="right"><strong>Actions</strong></TableCell>
                             </TableRow>
@@ -284,6 +288,15 @@ export default function ManageSalons() {
                                     <TableCell>{salon.city}, {salon.state}</TableCell>
                                     <TableCell>{salon.phone}</TableCell>
                                     <TableCell>{dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A')} - {dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A')}</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={salon.target_gender || 'unisex'}
+                                            size="small"
+                                            color={salon.target_gender === 'male' ? 'info' : salon.target_gender === 'female' ? 'secondary' : 'default'}
+                                            variant="outlined"
+                                            sx={{ textTransform: 'capitalize' }}
+                                        />
+                                    </TableCell>
                                     <TableCell>
                                         <Chip
                                             label={salon.is_active ? 'Active' : 'Inactive'}
@@ -483,6 +496,20 @@ export default function ManageSalons() {
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Gender</InputLabel>
+                                    <Select
+                                        value={formData.target_gender || 'unisex'}
+                                        label="Gender"
+                                        onChange={(e) => setFormData({ ...formData, target_gender: e.target.value as any })}
+                                    >
+                                        <MenuItem value="male">Male</MenuItem>
+                                        <MenuItem value="female">Female</MenuItem>
+                                        <MenuItem value="unisex">Unisex</MenuItem>
+                                    </Select>
+                                </FormControl>
                             </Grid>
                         </Grid>
                     </DialogContent>

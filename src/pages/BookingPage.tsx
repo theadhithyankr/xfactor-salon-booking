@@ -41,45 +41,63 @@ export default function BookingPage() {
     const [selectedSalon, setSelectedSalon] = useState<any | null>(null);
     const [selectedServices, setSelectedServices] = useState<any[]>([]); // Array for multiple services
     const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
+    const [preSelectedService, setPreSelectedService] = useState<any | null>(null); // Track service from Home page
 
     // Initial Load: Check for pre-selected service from Home page
     useEffect(() => {
         if (location.state?.service) {
             const preService = location.state.service;
-            setSelectedServices([preService]); // Add to array
-            // If service has a salon_id, we should try to find that salon and set it.
-            // But we need to fetch salons first.
-            // For now, let's just assume we fast-forward to Step 2 (Professional)
-            // But we ideally need the salon context for the worker filter.
-            setActiveStep(2);
+            setPreSelectedService(preService); // Store the pre-selected service
+            setSelectedServices([preService]); // Add to selected services
+            // Start at Step 0 (Salon Selection) to show filtered salons
+            setActiveStep(0);
         }
     }, [location.state]);
 
-    // Fetch Salons on Mount
+    // Fetch Salons on Mount - Filter by pre-selected service if exists
     useEffect(() => {
         const fetchSalons = async () => {
-            const { data } = await supabase.from('salons').select('*').eq('is_active', true);
+            let query = supabase.from('salons').select('*').eq('is_active', true);
+
+            // If there's a pre-selected service, only show salons that offer it
+            if (preSelectedService) {
+                // If service has a specific salon_id, only show that salon
+                if (preSelectedService.salon_id) {
+                    query = query.eq('id', preSelectedService.salon_id);
+                }
+                // If service is global (salon_id is null), show all salons
+                // (no additional filter needed)
+            }
+
+            const { data } = await query;
             if (data) setSalons(data);
         };
         fetchSalons();
-    }, []);
+    }, [preSelectedService]);
 
-    // Fetch Services when Salon Changes (or if starting from scratch)
+    // Fetch Services when Salon Changes
     useEffect(() => {
         const fetchServices = async () => {
             let query = supabase.from('services').select('*').eq('is_active', true);
 
             // If we selected a salon, valid services are those at this salon OR global services (null salon_id)
             if (selectedSalon) {
-                // RLS or Filter logic: salon_id is null OR salon_id = selectedSalon.id
                 query = query.or(`salon_id.is.null,salon_id.eq.${selectedSalon.id}`);
             }
 
             const { data } = await query;
-            if (data) setServices(data);
+            if (data) {
+                setServices(data);
+
+                // If there's a pre-selected service and we just selected a salon,
+                // make sure the pre-selected service is still in the selected list
+                if (preSelectedService && !selectedServices.find(s => s.id === preSelectedService.id)) {
+                    setSelectedServices([preSelectedService]);
+                }
+            }
         };
         fetchServices();
-    }, [selectedSalon]);
+    }, [selectedSalon, preSelectedService]);
 
 
     // Fetch Workers when Salon IS Selected
@@ -330,6 +348,11 @@ export default function BookingPage() {
                                 {/* STEP 0: SELECT SALON */}
                                 {activeStep === 0 && (
                                     <Box>
+                                        {preSelectedService && (
+                                            <Alert severity="info" sx={{ mb: 3 }}>
+                                                Booking service: <strong>{preSelectedService.name}</strong>. Select a salon that offers this service.
+                                            </Alert>
+                                        )}
                                         <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
                                             Select a Salon
                                         </Typography>
