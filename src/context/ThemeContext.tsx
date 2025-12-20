@@ -19,7 +19,7 @@ export const CustomThemeProvider = ({ children }: { children: ReactNode }) => {
     // 1. Check local storage, default to 'dark'
     const [mode, setMode] = useState<PaletteMode>(() => {
         const savedMode = localStorage.getItem('themeMode');
-        return (savedMode === 'light' || savedMode === 'dark') ? savedMode : 'dark';
+        return (savedMode === 'light' || savedMode === 'dark') ? savedMode : 'light';
     });
 
     // 2. Update toggle function

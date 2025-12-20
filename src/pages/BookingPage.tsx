@@ -9,6 +9,9 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import MobileStepper from '@mui/material/MobileStepper';
+import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
@@ -260,28 +263,45 @@ export default function BookingPage() {
 
     return (
         <Box sx={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            display: 'grid', placeItems: 'center', zIndex: 1, pt: '80px', overflow: 'auto', px: 2
+            minHeight: '100dvh',
+            width: '100dvw',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            pt: { xs: '80px', md: '100px' },
+            pb: { xs: '100px', md: 4 }, // Extra padding for sticky footer on mobile
+            bgcolor: 'background.default'
         }}>
-            <Container maxWidth="md" sx={{ py: 6 }}>
+            <Container maxWidth="md" sx={{ py: { xs: 3, md: 6 }, px: { xs: 2, md: 3 } }}>
                 {!bookingSuccess && (
                     <>
-                        <Typography variant="h2" align="center" gutterBottom fontWeight="800">
+                        <Typography variant="h3" align="center" gutterBottom fontWeight="800" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
                             Book Appointment
                         </Typography>
 
-                        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 8 }}>
-                            {steps.map((label) => (
-                                <Step key={label}><StepLabel>{label}</StepLabel></Step>
-                            ))}
-                        </Stepper>
+                        {/* Desktop Stepper */}
+                        <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 8 }}>
+                            <Stepper activeStep={activeStep} alternativeLabel>
+                                {steps.map((label) => (
+                                    <Step key={label}><StepLabel>{label}</StepLabel></Step>
+                                ))}
+                            </Stepper>
+                        </Box>
+
+                        {/* Mobile Step Indicator - REMOVED (Replaced by MobileStepper at bottom) */}
                     </>
                 )}
 
                 <MotionPaper
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    sx={{ p: 4, borderRadius: 4, bgcolor: 'background.paper', border: '1px solid rgba(255,255,255,0.1)' }}
+                    sx={{
+                        p: { xs: 2, md: 4 },
+                        borderRadius: 4,
+                        bgcolor: 'background.paper',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}
                 >
                     {bookingSuccess ? (
                         <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -318,9 +338,12 @@ export default function BookingPage() {
                                                     sx={{
                                                         p: 3,
                                                         cursor: 'pointer',
-                                                        border: selectedSalon?.id === salon.id ? '2px solid #FF0000' : '1px solid rgba(255,255,255,0.1)',
-                                                        bgcolor: selectedSalon?.id === salon.id ? 'rgba(255,0,0,0.1)' : 'background.paper'
+                                                        border: selectedSalon?.id === salon.id ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                        bgcolor: selectedSalon?.id === salon.id ? 'rgba(255,0,0,0.05)' : 'background.paper',
+                                                        transition: 'all 0.2s',
+                                                        '&:hover': { transform: 'scale(1.02)' }
                                                     }}
+                                                    elevation={selectedSalon?.id === salon.id ? 4 : 1}
                                                 >
                                                     <Typography variant="h6">{salon.name}</Typography>
                                                     <Typography variant="body2" color="text.secondary">{salon.city}, {salon.state}</Typography>
@@ -348,15 +371,17 @@ export default function BookingPage() {
                                                     <Paper
                                                         onClick={() => toggleService(svc)}
                                                         sx={{
-                                                            p: 3,
+                                                            p: 2,
                                                             cursor: 'pointer',
-                                                            border: isSelected ? '2px solid #FF0000' : '1px solid rgba(255,255,255,0.1)',
-                                                            bgcolor: isSelected ? 'rgba(255,0,0,0.1)' : 'background.paper',
-                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                                            border: isSelected ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                            bgcolor: isSelected ? 'rgba(255,0,0,0.05)' : 'background.paper',
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            transition: 'all 0.2s'
                                                         }}
+                                                        elevation={isSelected ? 4 : 1}
                                                     >
                                                         <Box>
-                                                            <Typography variant="h6">{svc.name}</Typography>
+                                                            <Typography variant="h6" fontSize="1rem">{svc.name}</Typography>
                                                             <Typography variant="body2" color="text.secondary">
                                                                 {svc.duration_minutes} min • ₹{svc.price}
                                                             </Typography>
@@ -383,9 +408,10 @@ export default function BookingPage() {
                                                 onClick={() => setSelectedWorker(null)}
                                                 sx={{
                                                     p: 3, textAlign: 'center', cursor: 'pointer',
-                                                    border: selectedWorker === null ? '2px solid #FF0000' : '1px solid rgba(255,255,255,0.1)',
-                                                    bgcolor: selectedWorker === null ? 'rgba(255,0,0,0.1)' : 'background.paper'
+                                                    border: selectedWorker === null ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                    bgcolor: selectedWorker === null ? 'rgba(255,0,0,0.05)' : 'background.paper'
                                                 }}
+                                                elevation={selectedWorker === null ? 4 : 1}
                                             >
                                                 <Typography variant="h6">Any Professional</Typography>
                                                 <Typography variant="body2" color="text.secondary">Maximum availability</Typography>
@@ -397,9 +423,10 @@ export default function BookingPage() {
                                                     onClick={() => setSelectedWorker(worker)}
                                                     sx={{
                                                         p: 3, textAlign: 'center', cursor: 'pointer',
-                                                        border: selectedWorker?.id === worker.id ? '2px solid #FF0000' : '1px solid rgba(255,255,255,0.1)',
-                                                        bgcolor: selectedWorker?.id === worker.id ? 'rgba(255,0,0,0.1)' : 'background.paper'
+                                                        border: selectedWorker?.id === worker.id ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
+                                                        bgcolor: selectedWorker?.id === worker.id ? 'rgba(255,0,0,0.05)' : 'background.paper'
                                                     }}
+                                                    elevation={selectedWorker?.id === worker.id ? 4 : 1}
                                                 >
                                                     <Typography variant="h6">{worker.profile?.full_name || 'Worker'}</Typography>
                                                     <Typography variant="body2" color="text.secondary">Rating: {worker.rating || 'New'}</Typography>
@@ -415,10 +442,10 @@ export default function BookingPage() {
                             {activeStep === 3 && (
                                 <Box>
                                     <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 4, textAlign: 'center' }}>
-                                        Schedule for <span style={{ color: '#FF0000' }}>{selectedServices.length} Services</span>
+                                        Schedule
                                     </Typography>
                                     <Typography align="center" variant="subtitle1" sx={{ mb: 2 }}>
-                                        Total Duration: {getTotalDuration()} mins
+                                        Duration: {getTotalDuration()} mins
                                     </Typography>
 
                                     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -468,7 +495,7 @@ export default function BookingPage() {
                                     <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                         Confirm Booking
                                     </Typography>
-                                    <Box sx={{ my: 4, p: 3, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2, display: 'inline-block', textAlign: 'left', minWidth: '400px' }}>
+                                    <Box sx={{ my: 4, p: 3, bgcolor: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 2, display: 'inline-block', textAlign: 'left', minWidth: { xs: '100%', md: '400px' } }}>
                                         <Stack spacing={2}>
                                             <Box>
                                                 <Typography variant="caption" color="text.secondary">Salon</Typography>
@@ -503,7 +530,8 @@ export default function BookingPage() {
                                 </Box>
                             )}
 
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                            {/* Desktop Buttons */}
+                            <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'space-between', mt: 6, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                                 <Button
                                     disabled={activeStep === 0}
                                     onClick={handleBack}
@@ -519,6 +547,33 @@ export default function BookingPage() {
                                 >
                                     {activeStep === steps.length - 1 ? 'Confirm Booking' : 'Next'}
                                 </Button>
+                            </Box>
+
+                            {/* Mobile Stepper (Standard MUI Component) */}
+                            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+                                <MobileStepper
+                                    variant="dots"
+                                    steps={steps.length}
+                                    position="bottom"
+                                    activeStep={activeStep}
+                                    sx={{ bgcolor: 'background.paper', borderTop: '1px solid rgba(0,0,0,0.1)' }}
+                                    nextButton={
+                                        <Button
+                                            size="small"
+                                            onClick={handleNext}
+                                            disabled={activeStep === steps.length} // logic might need tweak if logic is same as handleNext checks
+                                        >
+                                            {activeStep === steps.length - 1 ? 'Confirm' : 'Next'}
+                                            <KeyboardArrowRight />
+                                        </Button>
+                                    }
+                                    backButton={
+                                        <Button size="small" onClick={handleBack} disabled={activeStep === 0}>
+                                            <KeyboardArrowLeft />
+                                            Back
+                                        </Button>
+                                    }
+                                />
                             </Box>
                         </>
                     )}
