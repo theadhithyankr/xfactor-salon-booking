@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, Grid, Typography, Card, CardContent, CardMedia, Box, Button, CircularProgress } from '@mui/material';
+
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -9,14 +10,30 @@ type Service = Database['public']['Tables']['services']['Row'];
 
 const MotionCard = motion.create(Card);
 
-export default function ServicesSection() {
+interface ServicesSectionProps {
+    genderFilter: string | null;
+}
+
+export default function ServicesSection({ genderFilter }: ServicesSectionProps) {
     const navigate = useNavigate();
     const [services, setServices] = useState<Service[]>([]);
+    const [filteredServices, setFilteredServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchServices();
     }, []);
+
+    // Filter whenever services or genderFilter changes
+    useEffect(() => {
+        if (!genderFilter) {
+            setFilteredServices(services);
+        } else {
+            setFilteredServices(services.filter(service =>
+                service.target_gender === genderFilter || service.target_gender === 'unisex'
+            ));
+        }
+    }, [services, genderFilter]);
 
     const fetchServices = async () => {
         try {
@@ -28,6 +45,7 @@ export default function ServicesSection() {
 
             if (error) throw error;
             setServices(data || []);
+            // Initial filter will be handled by the useEffect above
         } catch (error) {
             console.error('Error fetching services:', error);
         } finally {
@@ -54,7 +72,7 @@ export default function ServicesSection() {
                     variant="h2"
                     align="center"
                     gutterBottom
-                    sx={{ mb: 6, fontWeight: 800, color: 'text.primary' }}
+                    sx={{ mb: 4, fontWeight: 800, color: 'text.primary' }}
                     component={motion.h2}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -64,7 +82,7 @@ export default function ServicesSection() {
                 </Typography>
 
                 <Grid container spacing={4} justifyContent="center">
-                    {services.map((service, index) => (
+                    {filteredServices.map((service, index) => (
                         <Grid key={service.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
                             <MotionCard
                                 initial={{ opacity: 0, y: 50 }}
@@ -132,12 +150,14 @@ export default function ServicesSection() {
                     ))}
                 </Grid>
 
-                {services.length === 0 && !loading && (
+
+
+                {filteredServices.length === 0 && !loading && (
                     <Typography variant="h6" align="center" color="text.secondary" sx={{ mt: 4 }}>
                         No services available at the moment.
                     </Typography>
                 )}
             </Container>
-        </Box>
+        </Box >
     );
 }

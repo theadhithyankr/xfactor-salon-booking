@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
 import ServicesSection from '../components/ServicesSection';
@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase';
 
 export default function Home() {
     const navigate = useNavigate();
+
+    const [genderFilter, setGenderFilter] = useState<string | null>(null);
 
     useEffect(() => {
         const checkRoleAndRedirect = async () => {
@@ -29,8 +31,8 @@ export default function Home() {
 
     return (
         <Box>
-            <Hero />
-            <ServicesSection />
+            <Hero genderFilter={genderFilter} setGenderFilter={setGenderFilter} />
+            <ServicesSection genderFilter={genderFilter} />
         </Box>
     );
 }

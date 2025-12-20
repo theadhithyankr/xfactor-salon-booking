@@ -104,6 +104,7 @@ export interface Database {
                     price: number
                     category: 'haircut' | 'styling' | 'coloring' | 'treatment' | 'other' | null
                     image_url: string | null
+                    target_gender: 'male' | 'female' | 'unisex' | null
                     is_active: boolean | null
                     created_at: string
                     updated_at: string
@@ -117,6 +118,7 @@ export interface Database {
                     price: number
                     category?: 'haircut' | 'styling' | 'coloring' | 'treatment' | 'other' | null
                     image_url?: string | null
+                    target_gender?: 'male' | 'female' | 'unisex' | null
                     is_active?: boolean | null
                     created_at?: string
                     updated_at?: string
@@ -130,6 +132,7 @@ export interface Database {
                     price?: number
                     category?: 'haircut' | 'styling' | 'coloring' | 'treatment' | 'other' | null
                     image_url?: string | null
+                    target_gender?: 'male' | 'female' | 'unisex' | null
                     is_active?: boolean | null
                     created_at?: string
                     updated_at?: string

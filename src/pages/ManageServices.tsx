@@ -18,6 +18,7 @@ type Service = {
     price: number;
     duration_minutes: number;
     category: 'haircut' | 'styling' | 'coloring' | 'treatment' | 'other';
+    target_gender: 'male' | 'female' | 'unisex';
     image_url?: string;
     is_active: boolean;
 };
@@ -36,6 +37,7 @@ export default function ManageServices() {
         price: 0,
         duration_minutes: 30,
         category: 'haircut',
+        target_gender: 'unisex',
         image_url: '',
         is_active: true
     });
@@ -92,6 +94,7 @@ export default function ManageServices() {
                 price: 0,
                 duration_minutes: 30,
                 category: 'haircut',
+                target_gender: 'unisex',
                 image_url: '',
                 is_active: true
             });
@@ -249,6 +252,7 @@ export default function ManageServices() {
                                 <TableCell><strong>Image</strong></TableCell>
                                 <TableCell><strong>Name</strong></TableCell>
                                 <TableCell><strong>Category</strong></TableCell>
+                                <TableCell><strong>Gender</strong></TableCell>
                                 <TableCell><strong>Price</strong></TableCell>
                                 <TableCell><strong>Duration</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
@@ -271,6 +275,14 @@ export default function ManageServices() {
                                     <TableCell>{service.name}</TableCell>
                                     <TableCell>
                                         <Chip label={service.category} size="small" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={service.target_gender}
+                                            size="small"
+                                            color={service.target_gender === 'male' ? 'info' : service.target_gender === 'female' ? 'secondary' : 'default'}
+                                            variant="outlined"
+                                        />
                                     </TableCell>
                                     <TableCell>₹{service.price.toFixed(2)}</TableCell>
                                     <TableCell>{service.duration_minutes} min</TableCell>
@@ -322,7 +334,11 @@ export default function ManageServices() {
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Box>
                                             <Typography variant="h6" fontWeight="bold">{service.name}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{service.category}</Typography>
+                                            <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                                                <Typography variant="body2" color="text.secondary">{service.category}</Typography>
+                                                <Typography variant="body2" color="text.secondary">•</Typography>
+                                                <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>{service.target_gender}</Typography>
+                                            </Box>
                                         </Box>
                                         <Chip
                                             label={service.is_active ? 'Active' : 'Inactive'}
@@ -439,6 +455,21 @@ export default function ManageServices() {
                                         <MenuItem value="treatment">Treatment</MenuItem>
                                         <MenuItem value="other">Other</MenuItem>
                                     </Select>
+
+                                </FormControl>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Gender</InputLabel>
+                                    <Select
+                                        value={formData.target_gender}
+                                        label="Gender"
+                                        onChange={(e) => setFormData({ ...formData, target_gender: e.target.value as any })}
+                                    >
+                                        <MenuItem value="male">Male</MenuItem>
+                                        <MenuItem value="female">Female</MenuItem>
+                                        <MenuItem value="unisex">Unisex</MenuItem>
+                                    </Select>
                                 </FormControl>
                             </Grid>
                             {/* The original image_url TextField is removed as per instructions */}
@@ -471,6 +502,6 @@ export default function ManageServices() {
                     </DialogActions>
                 </Dialog>
             </Container>
-        </Box>
+        </Box >
     );
 }
