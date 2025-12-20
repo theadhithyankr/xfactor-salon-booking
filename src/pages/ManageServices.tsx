@@ -345,7 +345,7 @@ export default function ManageServices() {
                     <DialogContent>
                         <Grid container spacing={2} sx={{ mt: 1 }}>
                             {/* Image Upload */}
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                                     {formData.image_url && (
                                         <Box
@@ -371,7 +371,7 @@ export default function ManageServices() {
                                 </Box>
                             </Grid>
 
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <TextField
                                     fullWidth
                                     label="Service Name"
@@ -379,7 +379,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <TextField
                                     fullWidth
                                     label="Description"
@@ -389,7 +389,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     fullWidth
                                     label="Price (₹)"
@@ -398,7 +398,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     fullWidth
                                     label="Duration (minutes)"
@@ -407,7 +407,7 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) })}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <FormControl fullWidth>
                                     <InputLabel>Category</InputLabel>
                                     <Select

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { getTheme } from '../theme';
 import { PaletteMode, CssBaseline } from '@mui/material';

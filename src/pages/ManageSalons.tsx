@@ -25,6 +25,7 @@ type Salon = {
     opening_time: string;
     closing_time: string;
     image_url?: string;
+    is_active?: boolean;
 };
 
 export default function ManageSalons() {

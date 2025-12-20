@@ -477,7 +477,7 @@ export default function BookingPage() {
                                             </Box>
                                             <Box>
                                                 <Typography variant="caption" color="text.secondary">Selected Services</Typography>
-                                                {selectedServices.map((s, i) => (
+                                                {selectedServices.map((s) => (
                                                     <Typography key={s.id} variant="body1">• {s.name} ({s.duration_minutes}m)</Typography>
                                                 ))}
                                             </Box>
