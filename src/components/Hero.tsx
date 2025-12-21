@@ -17,7 +17,7 @@ export default function Hero({ genderFilter, setGenderFilter }: HeroProps) {
         <Box
             sx={{
                 position: 'relative',
-                height: '100vh',
+                height: '100dvh',
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',

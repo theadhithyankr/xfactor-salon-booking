@@ -169,6 +169,17 @@ export default function AdminDashboard() {
                                 Manage Content
                             </Button>
                         </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                color="secondary"
+                                onClick={() => navigate('/admin/reports')}
+                            >
+                                View Reports
+                            </Button>
+                        </Grid>
                     </Grid>
                 </Paper>
             </Container>

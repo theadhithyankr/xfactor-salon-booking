@@ -69,17 +69,13 @@ export default function Signup() {
 
     return (
         <Box sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            minHeight: '100dvh',
             display: 'grid',
             placeItems: 'center',
-            zIndex: 1,
             pt: '80px',
-            overflow: 'auto',
-            px: 2
+            pb: 4,
+            px: 2,
+            bgcolor: 'background.default'
         }}>
             <Container maxWidth="sm">
                 <MotionPaper

@@ -63,7 +63,7 @@ export default function Dashboard() {
     if (error) {
         return (
             <Box sx={{
-                height: '100vh',
+                height: '100dvh',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',

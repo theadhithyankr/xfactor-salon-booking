@@ -85,7 +85,7 @@ export default function ManageContent() {
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100dvh' }}>
                 <CircularProgress />
             </Box>
         );
@@ -101,17 +101,17 @@ export default function ManageContent() {
         }}>
             <Container maxWidth="md">
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Typography variant="h3" fontWeight="bold">
+                    <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '1.75rem', md: '3rem' } }}>
                         Manage Site Content
                     </Typography>
                 </Box>
 
-                <Paper sx={{ p: 4 }}>
+                <Paper sx={{ p: { xs: 2, md: 4 } }}>
                     <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
                         About Page Statistics
                     </Typography>
 
-                    <Grid container spacing={3}>
+                    <Grid container spacing={{ xs: 2, md: 3 }}>
                         {contents.map((item) => (
                             <Grid size={{ xs: 12 }} key={item.key}>
                                 <TextField
@@ -133,6 +133,8 @@ export default function ManageContent() {
                             startIcon={<Save />}
                             onClick={handleSave}
                             size="large"
+                            fullWidth
+                            sx={{ width: { sm: 'auto' } }}
                             disabled={saving}
                         >
                             {saving ? 'Saving...' : 'Save Changes'}

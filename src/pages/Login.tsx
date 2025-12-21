@@ -37,16 +37,13 @@ export default function Login() {
 
     return (
         <Box sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            minHeight: '100dvh',
             display: 'grid',
             placeItems: 'center',
             pt: '80px',
+            pb: 4,
             px: 2,
-            overflow: 'auto'
+            bgcolor: 'background.default'
         }}>
             <MotionPaper
                 initial={{ opacity: 0, y: 20 }}

@@ -14,6 +14,7 @@ import ManageServices from './pages/ManageServices';
 import ManageSalons from './pages/ManageSalons';
 import ManageWorkers from './pages/ManageWorkers';
 import ManageContent from './pages/ManageContent';
+import Reports from './pages/Reports';
 import Footer from './components/Footer';
 
 import ScrollToTop from './components/ScrollToTop';
@@ -27,7 +28,7 @@ function App() {
           display: 'flex',
           flexDirection: 'column',
           bgcolor: 'background.default',
-          minHeight: '100vh',
+          minHeight: '100dvh',
           color: 'text.primary'
         }}>
           <Navbar />
@@ -45,6 +46,7 @@ function App() {
               <Route path="/admin/salons" element={<ManageSalons />} />
               <Route path="/admin/workers" element={<ManageWorkers />} />
               <Route path="/admin/content" element={<ManageContent />} />
+              <Route path="/admin/reports" element={<Reports />} />
             </Routes>
           </Box>
           <Footer />

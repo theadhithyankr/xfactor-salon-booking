@@ -382,7 +382,6 @@ export default function ManageServices() {
                                             size="small"
                                             color={service.target_gender === 'male' ? 'info' : service.target_gender === 'female' ? 'secondary' : 'default'}
                                             variant="outlined"
-                                            size="small"
                                         />
                                     </TableCell>
                                     <TableCell>₹{service.price.toFixed(2)}</TableCell>
