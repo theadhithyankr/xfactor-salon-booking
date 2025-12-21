@@ -4,7 +4,9 @@ import {
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     IconButton, Chip, MenuItem, Avatar,
-    Tabs, Tab, Alert, CircularProgress
+    Tabs, Tab, Alert, CircularProgress,
+    // Added imports
+    FormControl, InputLabel, Select
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
@@ -30,6 +32,9 @@ export default function ManageWorkers() {
     // Form Mode: 'promote' (existing user) or 'create' (new user)
     const [createMode, setCreateMode] = useState<'promote' | 'create'>('promote');
 
+    // Filter State
+    const [filterSalonId, setFilterSalonId] = useState<string>('all');
+
     const [formData, setFormData] = useState({
         profile_id: '',
         salon_id: '',
@@ -41,6 +46,11 @@ export default function ManageWorkers() {
         password: '',
         full_name: '',
         phone: ''
+    });
+
+    const filteredWorkers = workers.filter(worker => {
+        if (filterSalonId === 'all') return true;
+        return worker.salon_id === filterSalonId;
     });
 
     useEffect(() => {
@@ -75,7 +85,7 @@ export default function ManageWorkers() {
                 *,
                 profile:profiles(*),
                 salon:salons(name)
-            `)
+                `)
             .order('created_at', { ascending: false });
 
         if (workersData) setWorkers(workersData);
@@ -290,22 +300,54 @@ export default function ManageWorkers() {
 
     return (
         <Box sx={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            display: 'grid', placeItems: 'center', zIndex: 1, pt: '80px', overflow: 'auto', px: 2
+            minHeight: '100dvh',
+            pt: '80px',
+            pb: 4,
+            px: { xs: 2, md: 4 },
+            bgcolor: 'background.default'
         }}>
-            <Container maxWidth="xl" sx={{ py: 6 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Typography variant="h3" fontWeight="bold">
+            <Container maxWidth="xl">
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    gap: 2,
+                    mb: 4
+                }}>
+                    <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
                         Manage Workers
                     </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => handleOpenDialog()}
-                        size="large"
-                    >
-                        Add Worker
-                    </Button>
+
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                        {/* FILTER DROPDOWN */}
+                        <FormControl sx={{ minWidth: { xs: '100%', sm: 200 } }} size="small">
+                            <InputLabel>Filter by Salon</InputLabel>
+                            <Select
+                                value={filterSalonId}
+                                label="Filter by Salon"
+                                onChange={(e) => setFilterSalonId(e.target.value)}
+                            >
+                                <MenuItem value="all">All Salons</MenuItem>
+                                {salons.map((salon) => (
+                                    <MenuItem key={salon.id} value={salon.id}>
+                                        {salon.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <Button
+                            variant="contained"
+                            startIcon={<Add />}
+                            onClick={() => handleOpenDialog()}
+                            size="large"
+                            fullWidth
+                            sx={{ width: { sm: 'auto' } }}
+                        >
+                            Add Worker
+                        </Button>
+                    </Box>
                 </Box>
 
                 {/* DESKTOP TABLE VIEW */}
@@ -322,7 +364,7 @@ export default function ManageWorkers() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {workers.map((worker) => (
+                            {filteredWorkers.map((worker) => (
                                 <TableRow key={worker.id}>
                                     <TableCell>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -363,7 +405,7 @@ export default function ManageWorkers() {
 
                 {/* MOBILE CARD VIEW */}
                 <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
-                    {workers.map((worker) => (
+                    {filteredWorkers.map((worker) => (
                         <Paper key={worker.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

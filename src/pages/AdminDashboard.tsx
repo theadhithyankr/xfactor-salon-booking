@@ -52,16 +52,11 @@ export default function AdminDashboard() {
 
     return (
         <Box sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'grid',
-            placeItems: 'center',
-            zIndex: 1, // Ensure it sits below navbar but visible
-            pt: '80px', // Push down content just enough so it's not hidden by navbar if screen is small
-            overflow: 'auto', // Allow scrolling if content is taller than screen
+            minHeight: '100dvh',
+            pt: '80px',
+            pb: 4,
+            px: { xs: 2, md: 4 },
+            bgcolor: 'background.default'
         }}>
             <Container maxWidth="lg">
                 <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
@@ -165,8 +160,13 @@ export default function AdminDashboard() {
                             </Button>
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                            <Button variant="contained" fullWidth size="large">
-                                View Reports
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                onClick={() => navigate('/admin/content')}
+                            >
+                                Manage Content
                             </Button>
                         </Grid>
                     </Grid>

@@ -13,6 +13,7 @@ import MyBookings from './pages/MyBookings';
 import ManageServices from './pages/ManageServices';
 import ManageSalons from './pages/ManageSalons';
 import ManageWorkers from './pages/ManageWorkers';
+import ManageContent from './pages/ManageContent';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/admin/services" element={<ManageServices />} />
             <Route path="/admin/salons" element={<ManageSalons />} />
             <Route path="/admin/workers" element={<ManageWorkers />} />
+            <Route path="/admin/content" element={<ManageContent />} />
           </Routes>
         </Box>
       </NotificationProvider>

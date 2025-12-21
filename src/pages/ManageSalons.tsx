@@ -353,21 +353,22 @@ export default function ManageSalons() {
 
     return (
         <Box sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'grid',
-            placeItems: 'center',
-            zIndex: 1,
+            minHeight: '100dvh',
             pt: '80px',
-            overflow: 'auto',
-            px: 2
+            pb: 4,
+            px: { xs: 2, md: 4 },
+            bgcolor: 'background.default'
         }}>
-            <Container maxWidth="xl" sx={{ py: 6 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Typography variant="h3" fontWeight="bold">
+            <Container maxWidth="xl">
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    gap: 2,
+                    mb: 4
+                }}>
+                    <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
                         Manage Salons
                     </Typography>
                     <Button
@@ -375,6 +376,8 @@ export default function ManageSalons() {
                         startIcon={<Add />}
                         onClick={() => handleOpenDialog()}
                         size="large"
+                        fullWidth
+                        sx={{ width: { sm: 'auto' } }}
                     >
                         Add Salon
                     </Button>

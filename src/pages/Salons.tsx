@@ -7,6 +7,17 @@ import { Database } from '../types/database.types';
 
 type Salon = Database['public']['Tables']['salons']['Row'];
 
+const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const h = parseInt(hours, 10);
+    const m = parseInt(minutes, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedHour = h % 12 || 12;
+    const formattedMinute = m < 10 ? `0${m}` : m;
+    return `${formattedHour}:${formattedMinute} ${ampm}`;
+};
+
 export default function Salons() {
     const [salons, setSalons] = useState<Salon[]>([]);
     const [loading, setLoading] = useState(true);
@@ -140,7 +151,7 @@ export default function Salons() {
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                             <AccessTime color="primary" />
                                                             <Typography variant="body1">
-                                                                {salon.opening_time} - {salon.closing_time}
+                                                                {formatTime(salon.opening_time)} - {formatTime(salon.closing_time)}
                                                             </Typography>
                                                         </Box>
                                                     )}
