@@ -295,17 +295,17 @@ export default function ManageServices() {
             <Container maxWidth="xl">
                 <Box sx={{
                     display: 'flex',
-                    flexDirection: { xs: 'column', md: 'row' },
-                    justifyContent: 'space-between',
-                    alignItems: { xs: 'stretch', md: 'center' },
-                    gap: 2,
+                    flexDirection: 'column',
+                    gap: 3,
                     mb: 4
                 }}>
-                    <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
-                        Manage Services
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
+                            Manage Services
+                        </Typography>
+                    </Box>
 
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center' }}>
                         {/* FILTER DROPDOWN */}
                         <FormControl sx={{ minWidth: { xs: '100%', sm: 200 } }} size="small">
                             <InputLabel>Filter by Salon</InputLabel>
