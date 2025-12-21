@@ -10,6 +10,7 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../context/NotificationContext';
+import { Checkbox, ListItemText, OutlinedInput } from '@mui/material';
 
 type Service = {
     id?: string;
@@ -21,14 +22,26 @@ type Service = {
     target_gender: 'male' | 'female' | 'unisex';
     image_url?: string;
     is_active: boolean;
+    salon_id?: string;
+};
+
+type Salon = {
+    id: string;
+    name: string;
 };
 
 export default function ManageServices() {
     const navigate = useNavigate();
     const { showNotification } = useNotification();
     const [services, setServices] = useState<Service[]>([]);
+    const [salons, setSalons] = useState<Salon[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
+
+    // Filtering State
+    const [filterSalonId, setFilterSalonId] = useState<string>('all');
+
+    const [selectedSalons, setSelectedSalons] = useState<string[]>([]);
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState<Service>({
@@ -50,7 +63,14 @@ export default function ManageServices() {
     useEffect(() => {
         checkAdminAccess();
         fetchServices();
+        fetchSalons();
     }, []);
+
+    // Derived state for filtered services
+    const filteredServices = services.filter(service => {
+        if (filterSalonId === 'all') return true;
+        return service.salon_id === filterSalonId;
+    });
 
     const checkAdminAccess = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -82,10 +102,22 @@ export default function ManageServices() {
         setLoading(false);
     };
 
+    const fetchSalons = async () => {
+        const { data, error } = await supabase
+            .from('salons')
+            .select('id, name')
+            .order('name');
+
+        if (!error && data) {
+            setSalons(data);
+        }
+    };
+
     const handleOpenDialog = (service?: Service) => {
         if (service) {
             setEditingService(service);
             setFormData(service);
+            setSelectedSalons(service.salon_id ? [service.salon_id] : []);
         } else {
             setEditingService(null);
             setFormData({
@@ -98,6 +130,7 @@ export default function ManageServices() {
                 image_url: '',
                 is_active: true
             });
+            setSelectedSalons([]);
         }
         setDialogOpen(true);
     };
@@ -119,7 +152,6 @@ export default function ManageServices() {
             const fileName = `service_${Math.random()}.${fileExt}`;
             const filePath = `${fileName}`;
 
-            // Reusing salon_images bucket as discussed
             const { error: uploadError } = await supabase.storage
                 .from('salon_images')
                 .upload(filePath, file);
@@ -142,26 +174,63 @@ export default function ManageServices() {
 
     const handleSave = async () => {
         try {
+            if (selectedSalons.length === 0) {
+                showNotification('Please select at least one salon', 'error');
+                return;
+            }
+
+            // Exclude system fields
+            const { id, created_at, updated_at, ...cleanFormData } = formData;
+
             if (editingService) {
-                // Update existing service
+                // UPDATE Logic
                 const { error } = await supabase
                     .from('services')
-                    .update(formData)
+                    .update(cleanFormData)
                     .eq('id', editingService.id);
 
                 if (error) throw error;
+
+                // Copy to other salons logic
+                const existingSalonId = editingService.salon_id;
+                const newSalons = selectedSalons.filter(id => id !== existingSalonId);
+
+                if (newSalons.length > 0) {
+                    const newServiceRecords = newSalons.map(salonId => ({
+                        ...cleanFormData,
+                        salon_id: salonId
+                    }));
+
+                    const { error: bulkError } = await supabase
+                        .from('services')
+                        .insert(newServiceRecords);
+
+                    if (bulkError) throw bulkError;
+
+                    showNotification(`Service updated and copied to ${newSalons.length} new salon(s)`, 'success');
+                } else {
+                    showNotification('Service updated successfully', 'success');
+                }
+
             } else {
-                // Create new service
+                // CREATE Logic (Bulk)
+                const newServiceRecords = selectedSalons.map(salonId => ({
+                    ...cleanFormData,
+                    salon_id: salonId
+                }));
+
                 const { error } = await supabase
                     .from('services')
-                    .insert([formData]);
+                    .insert(newServiceRecords);
 
                 if (error) throw error;
+                showNotification(`Service added to ${selectedSalons.length} salon(s)`, 'success');
             }
 
+            setDialogOpen(false);
             fetchServices();
-            handleCloseDialog();
         } catch (error: any) {
+            console.error('Error saving service:', error);
             showNotification('Error saving service: ' + error.message, 'error');
         }
     };
@@ -217,31 +286,54 @@ export default function ManageServices() {
 
     return (
         <Box sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'grid',
-            placeItems: 'center',
-            zIndex: 1,
+            minHeight: '100dvh',
             pt: '80px',
-            overflow: 'auto',
-            px: 2
+            pb: 4,
+            px: { xs: 2, md: 4 },
+            bgcolor: 'background.default'
         }}>
-            <Container maxWidth="xl" sx={{ py: 6 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Typography variant="h3" fontWeight="bold">
+            <Container maxWidth="xl">
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    gap: 2,
+                    mb: 4
+                }}>
+                    <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
                         Manage Services
                     </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => handleOpenDialog()}
-                        size="large"
-                    >
-                        Add Service
-                    </Button>
+
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                        {/* FILTER DROPDOWN */}
+                        <FormControl sx={{ minWidth: { xs: '100%', sm: 200 } }} size="small">
+                            <InputLabel>Filter by Salon</InputLabel>
+                            <Select
+                                value={filterSalonId}
+                                label="Filter by Salon"
+                                onChange={(e) => setFilterSalonId(e.target.value)}
+                            >
+                                <MenuItem value="all">All Salons</MenuItem>
+                                {salons.map((salon) => (
+                                    <MenuItem key={salon.id} value={salon.id}>
+                                        {salon.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <Button
+                            variant="contained"
+                            startIcon={<Add />}
+                            onClick={() => handleOpenDialog()}
+                            size="large"
+                            fullWidth
+                            sx={{ width: { sm: 'auto' } }}
+                        >
+                            Add Service
+                        </Button>
+                    </Box>
                 </Box>
 
                 {/* DESKTOP TABLE VIEW */}
@@ -251,6 +343,7 @@ export default function ManageServices() {
                             <TableRow>
                                 <TableCell><strong>Image</strong></TableCell>
                                 <TableCell><strong>Name</strong></TableCell>
+                                <TableCell><strong>Salon</strong></TableCell>
                                 <TableCell><strong>Category</strong></TableCell>
                                 <TableCell><strong>Gender</strong></TableCell>
                                 <TableCell><strong>Price</strong></TableCell>
@@ -260,7 +353,7 @@ export default function ManageServices() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {services.map((service) => (
+                            {filteredServices.map((service) => (
                                 <TableRow key={service.id}>
                                     <TableCell>
                                         {service.image_url && (
@@ -274,6 +367,13 @@ export default function ManageServices() {
                                     </TableCell>
                                     <TableCell>{service.name}</TableCell>
                                     <TableCell>
+                                        <Chip
+                                            label={salons.find(s => s.id === service.salon_id)?.name || 'Unknown Salon'}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    </TableCell>
+                                    <TableCell>
                                         <Chip label={service.category} size="small" />
                                     </TableCell>
                                     <TableCell>
@@ -282,6 +382,7 @@ export default function ManageServices() {
                                             size="small"
                                             color={service.target_gender === 'male' ? 'info' : service.target_gender === 'female' ? 'secondary' : 'default'}
                                             variant="outlined"
+                                            size="small"
                                         />
                                     </TableCell>
                                     <TableCell>₹{service.price.toFixed(2)}</TableCell>
@@ -319,7 +420,7 @@ export default function ManageServices() {
 
                 {/* MOBILE CARD VIEW */}
                 <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
-                    {services.map((service) => (
+                    {filteredServices.map((service) => (
                         <Paper key={service.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
                                 {service.image_url && (
@@ -334,6 +435,12 @@ export default function ManageServices() {
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Box>
                                             <Typography variant="h6" fontWeight="bold">{service.name}</Typography>
+                                            <Chip
+                                                label={salons.find(s => s.id === service.salon_id)?.name || 'Unknown Salon'}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ mt: 0.5, mb: 0.5 }}
+                                            />
                                             <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                                                 <Typography variant="body2" color="text.secondary">{service.category}</Typography>
                                                 <Typography variant="body2" color="text.secondary">•</Typography>
@@ -423,6 +530,39 @@ export default function ManageServices() {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </Grid>
+
+                            {/* SALON SELECTION (Multi-Select) */}
+                            <Grid size={{ xs: 12 }}>
+                                <FormControl fullWidth required>
+                                    <InputLabel>Assign to Salons</InputLabel>
+                                    <Select
+                                        multiple
+                                        value={selectedSalons}
+                                        onChange={(e) => setSelectedSalons(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value as string[])}
+                                        input={<OutlinedInput label="Assign to Salons" />}
+                                        renderValue={(selected) => (
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {selected.map((value) => (
+                                                    <Chip key={value} label={salons.find(s => s.id === value)?.name || value} />
+                                                ))}
+                                            </Box>
+                                        )}
+                                    >
+                                        {salons.map((salon) => (
+                                            <MenuItem key={salon.id} value={salon.id}>
+                                                <Checkbox checked={selectedSalons.indexOf(salon.id) > -1} />
+                                                <ListItemText primary={salon.name} />
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                                {editingService && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                        Check additional salons to copy this service to them. Unchecking will NOT remove existing services.
+                                    </Typography>
+                                )}
+                            </Grid>
+
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     fullWidth
