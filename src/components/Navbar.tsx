@@ -61,7 +61,7 @@ export default function Navbar() {
 
     const navItems = [
         { label: 'Home', path: '/', icon: <Home />, show: !user || userRole === 'customer' },
-        { label: 'Salons', path: '/salons', icon: <Store />, show: true },
+        { label: 'Salons', path: '/salons', icon: <Store />, show: !user || userRole === 'customer' },
         { label: 'About', path: '/about', icon: <Info />, show: !user || userRole === 'customer' },
         { label: 'My Bookings', path: '/my-bookings', icon: <CalendarMonth />, show: user && userRole === 'customer' },
         { label: 'My Schedule', path: '/dashboard', icon: <DashboardIcon />, show: user && userRole === 'worker' },
