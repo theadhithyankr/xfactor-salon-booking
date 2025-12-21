@@ -23,6 +23,8 @@ type Service = {
     image_url?: string;
     is_active: boolean;
     salon_id?: string;
+    created_at?: string;
+    updated_at?: string;
 };
 
 type Salon = {

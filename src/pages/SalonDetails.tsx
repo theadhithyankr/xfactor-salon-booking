@@ -74,7 +74,7 @@ export default function SalonDetails() {
         return matchesSearch && matchesCategory;
     });
 
-    const categories = ['all', ...Array.from(new Set(services.map(s => s.category)))];
+    const categories = ['all', ...Array.from(new Set(services.map(s => s.category).filter((c): c is string => c !== null)))];
 
     const formatTime12h = (time: string) => {
         if (!time) return '';
@@ -188,7 +188,7 @@ export default function SalonDetails() {
 
             {/* SERVICES LIST - DESKTOP TABLE */}
             <Container maxWidth="lg" sx={{ display: { xs: 'none', md: 'block' } }}>
-                <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                <TableContainer component={Paper} sx={{ width: '100%', overflow: 'hidden' }}>
                     <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
                         <Typography variant="h6" fontWeight="bold">Available Services ({filteredServices.length})</Typography>
                     </Box>
@@ -254,72 +254,74 @@ export default function SalonDetails() {
                                 ))
                             )}
                         </TableBody>
-                    </Table>
-                </Paper>
-            </Container>
+                            )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Container>
 
-            {/* SERVICES LIST - MOBILE CARDS (Like ManageServices) */}
-            <Container maxWidth="lg" sx={{ display: { xs: 'block', md: 'none' } }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>Services ({filteredServices.length})</Typography>
+            {/* SERVICES LIST - MOBILE CARDS (Like ManageServices) */ }
+    <Container maxWidth="lg" sx={{ display: { xs: 'block', md: 'none' } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>Services ({filteredServices.length})</Typography>
 
-                    {filteredServices.length === 0 ? (
-                        <Typography color="text.secondary" align="center" sx={{ py: 4 }}>No services found.</Typography>
-                    ) : (
-                        filteredServices.map((service) => (
-                            <Paper key={service.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                <Box sx={{ display: 'flex', gap: 2 }}>
-                                    {service.image_url && (
-                                        <Box
-                                            component="img"
-                                            src={service.image_url}
-                                            alt={service.name}
-                                            sx={{ width: 60, height: 60, borderRadius: 1, objectFit: 'cover' }}
-                                        />
-                                    )}
-                                    <Box sx={{ flex: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <Box>
-                                                <Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.2 }}>
-                                                    {service.name}
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', gap: 1, mt: 0.5, alignItems: 'center' }}>
-                                                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-                                                        {service.category}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
-                                            <Typography variant="subtitle1" fontWeight="bold" color="primary">
-                                                ₹{service.price}
+            {filteredServices.length === 0 ? (
+                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>No services found.</Typography>
+            ) : (
+                filteredServices.map((service) => (
+                    <Paper key={service.id} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            {service.image_url && (
+                                <Box
+                                    component="img"
+                                    src={service.image_url}
+                                    alt={service.name}
+                                    sx={{ width: 60, height: 60, borderRadius: 1, objectFit: 'cover' }}
+                                />
+                            )}
+                            <Box sx={{ flex: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <Box>
+                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ lineHeight: 1.2 }}>
+                                            {service.name}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 1, mt: 0.5, alignItems: 'center' }}>
+                                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                                                {service.category}
                                             </Typography>
                                         </Box>
                                     </Box>
-                                </Box>
-
-                                {service.description && (
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                                        {service.description}
+                                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                                        ₹{service.price}
                                     </Typography>
-                                )}
-
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <AccessTime sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
-                                        <Typography variant="body2" color="text.secondary">{service.duration_minutes} min</Typography>
-                                    </Box>
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={() => handleBookNow(service.id)}
-                                    >
-                                        Book Now
-                                    </Button>
                                 </Box>
-                            </Paper>
-                        ))
-                    )}
-                </Box>
-            </Container>
+                            </Box>
+                        </Box>
+
+                        {service.description && (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                {service.description}
+                            </Typography>
+                        )}
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <AccessTime sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
+                                <Typography variant="body2" color="text.secondary">{service.duration_minutes} min</Typography>
+                            </Box>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                onClick={() => handleBookNow(service.id)}
+                            >
+                                Book Now
+                            </Button>
+                        </Box>
+                    </Paper>
+                ))
+            )}
         </Box>
+    </Container>
+        </Box >
     );
 }

@@ -3,6 +3,7 @@ import { Box, Container, Grid, Typography, Card, CardContent, CircularProgress, 
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { AttachMoney, CalendarToday, Cancel, People, CheckCircle, HourglassEmpty, PlayArrow, EventAvailable } from '@mui/icons-material';
+import dayjs from 'dayjs';
 
 export default function Reports() {
     const navigate = useNavigate();
@@ -147,7 +148,7 @@ export default function Reports() {
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }} justifyContent="center">
                 {/* Total Revenue */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
                         color: 'white',
@@ -167,7 +168,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* Pending */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #FFA726 0%, #FB8C00 100%)',
                         color: 'white',
@@ -187,7 +188,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* Confirmed */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)',
                         color: 'white',
@@ -207,7 +208,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* In Progress */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
@@ -227,7 +228,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* Completed */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
                         color: 'white',
@@ -247,7 +248,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* Cancelled */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)',
                         color: 'white',
@@ -267,7 +268,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* Total Bookings */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                         color: 'white',
@@ -287,7 +288,7 @@ export default function Reports() {
                 </Grid>
 
                 {/* Active Workers */}
-                <Grid item xs={6} sm={6} md={3}>
+                <Grid size={{ xs: 6, sm: 6, md: 3 }}>
                     <Card sx={{
                         background: 'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)',
                         color: 'white',
