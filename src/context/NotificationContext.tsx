@@ -18,7 +18,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         setOpen(true);
     };
 
-    const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    const handleClose = (_?: React.SyntheticEvent | Event, reason?: string) => {
         if (reason === 'clickaway') return;
         setOpen(false);
     };

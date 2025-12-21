@@ -577,12 +577,12 @@ export default function ManageSalons() {
                                         getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
                                         filterOptions={(x) => x}
                                         loading={isSearching}
-                                        onInputChange={(event, newInputValue, reason) => {
+                                        onInputChange={(_, newInputValue, reason) => {
                                             if (reason === 'input') {
                                                 setSearchQuery(newInputValue);
                                             }
                                         }}
-                                        onChange={(event, newValue: any) => {
+                                        onChange={(_, newValue: any) => {
                                             if (typeof newValue === 'string') {
                                                 handleSearchLocation(newValue);
                                             } else if (newValue) {

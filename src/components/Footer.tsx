@@ -1,4 +1,5 @@
-import { Box, Container, Typography, Grid, IconButton, Link as MuiLink } from '@mui/material';
+
+import { Box, Container, Typography, Grid, IconButton } from '@mui/material';
 import { Facebook, Instagram, LinkedIn, X } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';

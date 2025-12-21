@@ -74,7 +74,7 @@ export default function SalonDetails() {
         return matchesSearch && matchesCategory;
     });
 
-    const categories = ['all', ...Array.from(new Set(services.map(s => s.category).filter((c): c is string => c !== null)))];
+    const categories = ['all', ...Array.from(new Set(services.map(s => s.category).filter((c): c is 'haircut' | 'styling' | 'coloring' | 'treatment' | 'other' => c !== null)))];
 
     const formatTime12h = (time: string) => {
         if (!time) return '';
