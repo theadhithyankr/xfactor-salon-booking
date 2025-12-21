@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Typography, Box, Paper, Grid, Card, CardContent, CardMedia, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
 import { LocationOn, Phone, AccessTime } from '@mui/icons-material';
@@ -21,6 +22,11 @@ const formatTime = (timeString: string) => {
 export default function Salons() {
     const [salons, setSalons] = useState<Salon[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+
+    const handleCardClick = (salonId: string) => {
+        navigate(`/salons/${salonId}`);
+    };
 
     useEffect(() => {
         fetchSalons();
@@ -106,8 +112,10 @@ export default function Salons() {
                                                 transform: 'translateY(-4px)',
                                                 boxShadow: '0 8px 24px rgba(255, 0, 0, 0.15)',
                                             },
-                                            transition: 'all 0.3s ease'
-                                        }}>
+                                            transition: 'all 0.3s ease',
+                                            cursor: 'pointer'
+                                        }}
+                                            onClick={() => handleCardClick(salon.id)}>
                                             <CardMedia
                                                 sx={{ height: 200 }}
                                                 image={salon.image_url || 'https://images.unsplash.com/photo-1521590832896-bc78b4bdc03c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}

@@ -9,6 +9,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Salons from './pages/Salons';
+import SalonDetails from './pages/SalonDetails';
 import MyBookings from './pages/MyBookings';
 import ManageServices from './pages/ManageServices';
 import ManageSalons from './pages/ManageSalons';
@@ -16,7 +17,6 @@ import ManageWorkers from './pages/ManageWorkers';
 import ManageContent from './pages/ManageContent';
 import Reports from './pages/Reports';
 import Footer from './components/Footer';
-
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -41,6 +41,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/about" element={<About />} />
               <Route path="/salons" element={<Salons />} />
+              <Route path="/salons/:id" element={<SalonDetails />} />
               <Route path="/my-bookings" element={<MyBookings />} />
               <Route path="/admin/services" element={<ManageServices />} />
               <Route path="/admin/salons" element={<ManageSalons />} />
