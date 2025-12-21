@@ -3,8 +3,9 @@ import {
     Container, Typography, Box, Paper, Button, TextField,
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    IconButton, Chip, Grid, CircularProgress, Select, MenuItem, FormControl, InputLabel
+    IconButton, Chip, Grid, CircularProgress, Select, MenuItem, FormControl, InputLabel, Autocomplete
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -13,6 +14,23 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useNotification } from '../context/NotificationContext';
+
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon in React-Leaflet
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 type Salon = {
     id?: string;
@@ -28,6 +46,28 @@ type Salon = {
     target_gender?: 'male' | 'female' | 'unisex';
     image_url?: string;
     is_active?: boolean;
+    latitude?: number;
+    longitude?: number;
+};
+
+const LocationMarker = ({ position, setPosition, onLocationSelect }: { position: { lat: number, lng: number }, setPosition: (lat: number, lng: number) => void, onLocationSelect: (lat: number, lng: number) => void }) => {
+    const map = useMapEvents({
+        click(e) {
+            setPosition(e.latlng.lat, e.latlng.lng);
+            onLocationSelect(e.latlng.lat, e.latlng.lng);
+            map.flyTo(e.latlng, map.getZoom());
+        },
+    });
+
+    useEffect(() => {
+        if (position) {
+            map.flyTo([position.lat, position.lng], map.getZoom());
+        }
+    }, [position, map]);
+
+    return position ? (
+        <Marker position={[position.lat, position.lng]} />
+    ) : null;
 };
 
 export default function ManageSalons() {
@@ -50,8 +90,18 @@ export default function ManageSalons() {
         closing_time: '21:00',
         target_gender: 'unisex',
         is_active: true,
-        image_url: ''
+        image_url: '',
+        latitude: 12.9716, // Default to Bangalore (or any central location)
+        longitude: 77.5946
+
     });
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    // Confirmation Dialog
 
     // Confirmation Dialog
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -151,6 +201,80 @@ export default function ManageSalons() {
             showNotification('Error uploading image: ' + error.message, 'error');
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleSearchLocation = async (query: string) => {
+        if (!query) return;
+        setIsSearching(true);
+
+        // Check for Google Maps URL
+        if (query.includes('google.com/maps')) {
+            try {
+                let lat: number | null = null;
+                let lng: number | null = null;
+
+                // Pattern 1: !3d and !4d (Most accurate for specific place)
+                const latMatch = query.match(/!3d(-?\d+\.\d+)/);
+                const lngMatch = query.match(/!4d(-?\d+\.\d+)/);
+
+                if (latMatch && lngMatch) {
+                    lat = parseFloat(latMatch[1]);
+                    lng = parseFloat(lngMatch[1]);
+                }
+                // Pattern 2: @lat,lng (Viewport center - Fallback)
+                else {
+                    const atMatch = query.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                    if (atMatch) {
+                        lat = parseFloat(atMatch[1]);
+                        lng = parseFloat(atMatch[2]);
+                    }
+                }
+
+                if (lat && lng) {
+                    setFormData({ ...formData, latitude: lat, longitude: lng });
+                    handleLocationSelect(lat, lng);
+                    setSearchResults([]); // Clear dropdown as we found a direct match
+                    return;
+                }
+            } catch (e) {
+                console.error("Error parsing Google Maps URL", e);
+            }
+        }
+        else if (query.includes('goo.gl') || query.includes('maps.app.goo.gl')) {
+            showNotification("Short URLs cannot be expanded automatically. Please click the link, open it in browser, and paste the full URL here.", "info");
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            setSearchResults(data);
+        } catch (error) {
+            console.error("Error searching location:", error);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleLocationSelect = async (lat: number, lng: number) => {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await response.json();
+
+            const addressBy = data.address;
+            setFormData(prev => ({
+                ...prev,
+                latitude: lat,
+                longitude: lng,
+                address: addressBy.road || addressBy.suburb || addressBy.hamlet || prev.address,
+                city: addressBy.city || addressBy.town || addressBy.village || addressBy.county || prev.city,
+                state: addressBy.state || prev.state,
+                zip_code: addressBy.postcode || prev.zip_code
+            }));
+
+        } catch (error) {
+            console.error("Error reverse geocoding:", error);
         }
     };
 
@@ -421,12 +545,102 @@ export default function ManageSalons() {
                                 />
                             </Grid>
                             <Grid size={{ xs: 12 }}>
+
+
                                 <TextField
                                     fullWidth
                                     label="Address"
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                 />
+                            </Grid>
+
+                            {/* MAP PICKER */}
+                            <Grid size={{ xs: 12 }}>
+                                <Typography variant="subtitle2" gutterBottom>Pick Location</Typography>
+
+                                <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                                    <Autocomplete
+                                        fullWidth
+                                        freeSolo
+                                        options={searchResults}
+                                        getOptionLabel={(option) => typeof option === 'string' ? option : option.display_name}
+                                        filterOptions={(x) => x}
+                                        loading={isSearching}
+                                        onInputChange={(event, newInputValue, reason) => {
+                                            if (reason === 'input') {
+                                                setSearchQuery(newInputValue);
+                                            }
+                                        }}
+                                        onChange={(event, newValue: any) => {
+                                            if (typeof newValue === 'string') {
+                                                handleSearchLocation(newValue);
+                                            } else if (newValue) {
+                                                const lat = parseFloat(newValue.lat);
+                                                const lon = parseFloat(newValue.lon);
+                                                setFormData({ ...formData, latitude: lat, longitude: lon });
+                                                handleLocationSelect(lat, lon);
+                                            }
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Search Location or Paste Google Maps Link"
+                                                placeholder="e.g. Indiranagar or https://www.google.com/maps/..."
+                                                variant="outlined"
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val.includes('google.com/maps') || val.includes('goo.gl')) {
+                                                        handleSearchLocation(val);
+                                                    } else {
+                                                        // Debounce manual typing if needed, 
+                                                        // but onInputChange handles the state update.
+                                                        // This manual onChange catches paste events more reliably for some browsers.
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleSearchLocation(searchQuery);
+                                                    }
+                                                }}
+                                                InputProps={{
+                                                    ...params.InputProps,
+                                                    endAdornment: (
+                                                        <>
+                                                            {isSearching ? <CircularProgress color="inherit" size={20} /> : null}
+                                                            {params.InputProps.endAdornment}
+                                                        </>
+                                                    ),
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                </Box>
+
+
+                                <Paper variant="outlined" sx={{ height: 300, width: '100%', overflow: 'hidden' }}>
+                                    {dialogOpen && (
+                                        <MapContainer
+                                            center={[formData.latitude || 12.9716, formData.longitude || 77.5946]}
+                                            zoom={13}
+                                            style={{ height: '100%', width: '100%' }}
+                                        >
+                                            <TileLayer
+                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            />
+                                            <LocationMarker
+                                                position={{ lat: formData.latitude || 12.9716, lng: formData.longitude || 77.5946 }}
+                                                setPosition={(lat, lng) => setFormData({ ...formData, latitude: lat, longitude: lng })}
+                                                onLocationSelect={handleLocationSelect}
+                                            />
+                                        </MapContainer>
+                                    )}
+                                </Paper>
+                                <Typography variant="caption" color="text.secondary">
+                                    Click on the map to set location. Lat: {formData.latitude?.toFixed(4)}, Lng: {formData.longitude?.toFixed(4)}
+                                </Typography>
                             </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
                                 <TextField
@@ -540,6 +754,6 @@ export default function ManageSalons() {
                     </DialogActions>
                 </Dialog>
             </Container>
-        </Box>
+        </Box >
     );
 }

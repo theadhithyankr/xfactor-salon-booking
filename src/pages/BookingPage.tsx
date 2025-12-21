@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Container, Typography, Box, Paper, Grid, Button,
@@ -13,9 +13,11 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import MobileStepper from '@mui/material/MobileStepper';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
+import DirectionsIcon from '@mui/icons-material/Directions';
 import dayjs, { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import { calculateDistance, formatDistance } from '../utils/distance';
 
 const steps = ['Select Salon', 'Select Services', 'Select Professional', 'Date & Time', 'Confirm'];
 
@@ -42,6 +44,44 @@ export default function BookingPage() {
     const [selectedServices, setSelectedServices] = useState<any[]>([]); // Array for multiple services
     const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
     const [preSelectedService, setPreSelectedService] = useState<any | null>(null); // Track service from Home page
+
+    // Location State
+    const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
+
+    // Get User Location
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    console.log("Error getting location:", error);
+                }
+            );
+        }
+    }, []);
+
+    // Sort Salons by Distance
+    const sortedSalons = useMemo(() => {
+        if (!userLocation || salons.length === 0) return salons;
+
+        return [...salons].map(salon => {
+            if (salon.latitude && salon.longitude) {
+                const dist = calculateDistance(
+                    userLocation.lat,
+                    userLocation.lng,
+                    salon.latitude,
+                    salon.longitude
+                );
+                return { ...salon, distance: dist };
+            }
+            return { ...salon, distance: Infinity };
+        }).sort((a, b) => a.distance - b.distance);
+    }, [salons, userLocation]);
 
     // Initial Load: Check for pre-selected service from Home page
     useEffect(() => {
@@ -379,7 +419,7 @@ export default function BookingPage() {
                                                 </Typography>
                                             </Grid>
                                         ) : (
-                                            salons.map((salon) => (
+                                            sortedSalons.map((salon) => (
                                                 <Grid size={{ xs: 12, md: 6 }} key={salon.id}>
                                                     <Paper
                                                         onClick={() => setSelectedSalon(salon)}
@@ -389,12 +429,37 @@ export default function BookingPage() {
                                                             border: selectedSalon?.id === salon.id ? '2px solid #FF0000' : '1px solid rgba(0,0,0,0.1)',
                                                             bgcolor: selectedSalon?.id === salon.id ? 'rgba(255,0,0,0.05)' : 'background.paper',
                                                             transition: 'all 0.2s',
-                                                            '&:hover': { transform: 'scale(1.02)' }
+                                                            '&:hover': { transform: 'scale(1.02)' },
+                                                            position: 'relative',
+                                                            overflow: 'hidden'
                                                         }}
                                                         elevation={selectedSalon?.id === salon.id ? 4 : 1}
                                                     >
-                                                        <Typography variant="h6">{salon.name}</Typography>
-                                                        <Typography variant="body2" color="text.secondary">{salon.city}, {salon.state}</Typography>
+                                                        {salon.distance !== undefined && salon.distance !== Infinity && (
+                                                            <Chip
+                                                                label={`${formatDistance(salon.distance)} away`}
+                                                                color="primary"
+                                                                size="small"
+                                                                sx={{ position: 'absolute', top: 12, right: 12, fontWeight: 'bold' }}
+                                                            />
+                                                        )}
+
+                                                        <Typography variant="h6" sx={{ pr: 6 }}>{salon.name}</Typography>
+                                                        <Typography variant="body2" color="text.secondary" gutterBottom>{salon.city}, {salon.state}</Typography>
+
+                                                        {salon.latitude && salon.longitude && (
+                                                            <Button
+                                                                startIcon={<DirectionsIcon />}
+                                                                size="small"
+                                                                sx={{ mt: 1 }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${salon.latitude},${salon.longitude}`, '_blank');
+                                                                }}
+                                                            >
+                                                                Get Directions
+                                                            </Button>
+                                                        )}
                                                     </Paper>
                                                 </Grid>
                                             ))
