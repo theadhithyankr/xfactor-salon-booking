@@ -146,7 +146,11 @@ export default function ManageSalons() {
     const handleOpenDialog = (salon?: Salon) => {
         if (salon) {
             setEditingSalon(salon);
-            setFormData(salon);
+            setFormData({
+                ...salon,
+                opening_time: salon.opening_time || '09:00',
+                closing_time: salon.closing_time || '21:00'
+            });
         } else {
             setEditingSalon(null);
             setFormData({
@@ -414,7 +418,10 @@ export default function ManageSalons() {
                                     <TableCell>{salon.name}</TableCell>
                                     <TableCell>{salon.city}, {salon.state}</TableCell>
                                     <TableCell>{salon.phone}</TableCell>
-                                    <TableCell>{dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A')} - {dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A')}</TableCell>
+                                    <TableCell>
+                                        {salon.opening_time ? dayjs(`2000-01-01 ${salon.opening_time}`).format('h:mm A') : 'N/A'} -
+                                        {salon.closing_time ? dayjs(`2000-01-01 ${salon.closing_time}`).format('h:mm A') : 'N/A'}
+                                    </TableCell>
                                     <TableCell>
                                         <Chip
                                             label={salon.target_gender || 'unisex'}
@@ -489,7 +496,7 @@ export default function ManageSalons() {
                                     <strong>Phone:</strong> {salon.phone}
                                 </Typography>
                                 <Typography variant="body2">
-                                    <strong>Hours:</strong> {dayjs(salon.opening_time, 'HH:mm:ss').format('h:mm A')} - {dayjs(salon.closing_time, 'HH:mm:ss').format('h:mm A')}
+                                    <strong>Hours:</strong> {salon.opening_time ? dayjs(`2000-01-01 ${salon.opening_time}`).format('h:mm A') : 'N/A'} - {salon.closing_time ? dayjs(`2000-01-01 ${salon.closing_time}`).format('h:mm A') : 'N/A'}
                                 </Typography>
                             </Box>
 
@@ -682,7 +689,7 @@ export default function ManageSalons() {
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <TimePicker
                                         label="Opening Time"
-                                        value={dayjs(formData.opening_time, 'HH:mm')}
+                                        value={dayjs(`2000-01-01 ${formData.opening_time}`)}
                                         onChange={(newValue) => setFormData({ ...formData, opening_time: newValue?.format('HH:mm') || '09:00' })}
                                         ampm={true}
                                         slotProps={{
@@ -695,7 +702,7 @@ export default function ManageSalons() {
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <TimePicker
                                         label="Closing Time"
-                                        value={dayjs(formData.closing_time, 'HH:mm')}
+                                        value={dayjs(`2000-01-01 ${formData.closing_time}`)}
                                         onChange={(newValue) => setFormData({ ...formData, closing_time: newValue?.format('HH:mm') || '21:00' })}
                                         ampm={true}
                                         slotProps={{
