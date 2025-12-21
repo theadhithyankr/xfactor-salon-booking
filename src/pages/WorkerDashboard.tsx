@@ -187,16 +187,11 @@ export default function WorkerDashboard() {
 
     return (
         <Box sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'grid',
-            placeItems: 'center',
-            zIndex: 1,
+            minHeight: '100dvh',
             pt: '80px',
-            overflow: 'auto',
+            pb: 4,
+            px: { xs: 2, md: 4 },
+            bgcolor: 'background.default'
         }}>
             <Container maxWidth="xl">
                 <Paper sx={{ p: 4, mb: 4, bgcolor: 'background.paper' }}>
