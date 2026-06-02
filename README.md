@@ -1,30 +1,40 @@
-# React + TypeScript + Vite
+# XFactor Salon Booking
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Material UI salon booking platform with customer booking, dashboards, content management, and reports.
 
-Currently, two official plugins are available:
+## Key Features
+- Material UI salon booking platform with customer booking, dashboards, content management, and reports
+- Supabase integration is called out for the data, auth, or application state layer present in the codebase.
+- Includes management-facing screens such as admin, dashboard, or coordinator workflows where present.
+- Organized UI components and screens make the main user flows visible from the project structure.
+- Package scripts provide reproducible development, build, and preview commands.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech Stack
+- JavaScript/TypeScript
+- React
+- Vite
+- Supabase
+- HTML/CSS
 
-## Expanding the ESLint configuration
+## Project Structure
+- src/app or app - application routes, screens, and layout files.
+- components - reusable UI and workflow components.
+- public / assets - static images, icons, manifests, and visual assets.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+## Setup and Run
+```bash
+git clone https://github.com/theadhithyankr/xfactor-salon-booking.git
+cd xfactor-salon-booking
+npm install
+npm run dev
+npm run build
+npm run preview
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## What This Project Demonstrates
+- Building user-facing web applications with component-based UI and modern frontend tooling.
+- Integrating managed backend services for auth, persistence, realtime data, or app infrastructure.
+- Presenting project scope, setup, and technical choices clearly for reviewers and recruiters.
+
+## Repository
+- GitHub: https://github.com/theadhithyankr/xfactor-salon-booking
