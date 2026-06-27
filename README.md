@@ -14,7 +14,7 @@ Salon booking application for managing service discovery and appointments.
 
 Xfactor Salon Booking is a salon booking project in the TheAdhithyanKR/xfactor-salon-booking repository. Material UI salon booking platform with customer booking, dashboards, content management, and reports.
 
-The README was written from the repository contents, including its manifest files, source tree, and available project metadata. The primary manifest is $(System.Collections.Hashtable.Path), and the commands below are taken from its scripts.
+The README was written from the repository contents, including its manifest files, source tree, and available project metadata. The primary manifest is $(@{Path=package.json; Json=}.Path), and the commands below are taken from its scripts.
 
 ## Key Features
 
@@ -31,7 +31,7 @@ The README was written from the repository contents, including its manifest file
 
 ## Project Structure
 
-`	ext
+```text
 .
 |-- .eslintrc.cjs
 |-- ADMIN_GUIDE.md
@@ -57,14 +57,14 @@ The README was written from the repository contents, including its manifest file
 |-- src/vite-env.d.ts
 |-- tsconfig.json
 |-- tsconfig.node.json
-`
+```
 
 ## Setup
 
-`ash
+```bash
 npm install
 npm run dev
-`
+```
 
 ## What This Project Demonstrates
 
